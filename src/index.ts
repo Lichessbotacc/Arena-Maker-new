@@ -1,11 +1,11 @@
-import fetch from "node-fetch";
-import { URLSearchParams } from "url";
-import eachDayOfInterval from "date-fns/eachDayOfInterval";
-import dateAdd from "date-fns/add";
-import dateSet from "date-fns/set";
-import dateIsAfter from "date-fns/isAfter";
-import dateIsEqual from "date-fns/isEqual";
-import { config } from "./config";
+import fetch from 'node-fetch';
+import { URLSearchParams } from 'url';
+import eachDayOfInterval from 'date-fns/eachDayOfInterval';
+import dateAdd from 'date-fns/add';
+import dateSet from 'date-fns/set';
+import dateIsAfter from 'date-fns/isAfter';
+import dateIsEqual from 'date-fns/isEqual';
+import { config } from './config';
 
 const candidates = eachDayOfInterval({
   start: new Date(),
@@ -15,8 +15,8 @@ const candidates = eachDayOfInterval({
     config.dailyTournaments.map(blueprint => ({
       ...blueprint,
       startsAt: dateSet(day, {
-        hours: parseInt(blueprint.time.split(":")[0]),
-        minutes: parseInt(blueprint.time.split(":")[1]),
+        hours: parseInt(blueprint.time.split(':')[0]),
+        minutes: parseInt(blueprint.time.split(':')[1]),
       }),
     }))
   )
@@ -28,28 +28,24 @@ const looksLike = (existing: any, candidate: any) =>
   existing.clock.increment == candidate.clock[1];
 
 async function getLatestTournaments(nb: number) {
-  const response = await fetch(
-    `${config.server}/api/team/${config.team}/swiss?max=${nb}`
-  );
+  const response = await fetch(`${config.server}/api/team/${config.team}/swiss?max=${nb}`);
   const body = await response.text();
   return body
-    .split("\n")
+    .split('\n')
     .filter(line => line)
     .map(line => JSON.parse(line));
 }
 
-async function createTournament(tour: any): Promise<string | null> {
+async function createTournament(tour: any): Promise<any> {
+  // 1. Turnier erstellen
   const body = new URLSearchParams();
   for (const k of Object.keys(tour)) body.append(k, tour[k]);
 
-  const response = await fetch(
-    `${config.server}/api/swiss/new/${config.team}`,
-    {
-      method: "POST",
-      body,
-      headers: { Authorization: `Bearer ${config.oauthToken}` },
-    }
-  );
+  const response = await fetch(`${config.server}/api/swiss/new/${config.team}`, {
+    method: 'POST',
+    body,
+    headers: { Authorization: `Bearer ${config.oauthToken}` },
+  });
 
   if (response.status != 200) {
     const error = await response.text();
@@ -57,24 +53,41 @@ async function createTournament(tour: any): Promise<string | null> {
     return null;
   }
 
-  const json = await response.json();
-  return `${config.server}/swiss/${json.id}`;
+  const created = await response.json(); // enthält Turnier-ID
+  console.log("Turnier erstellt:", created.id);
+
+  // 2. Beschreibung mit Link updaten
+  const updateBody = new URLSearchParams();
+  updateBody.append(
+    "description",
+    tour.description.replace("{{nextLink}}", `https://lichess.org/swiss/${created.id}`)
+  );
+
+  const updateResp = await fetch(`${config.server}/api/swiss/${created.id}/update`, {
+    method: 'POST',
+    body: updateBody,
+    headers: { Authorization: `Bearer ${config.oauthToken}` },
+  });
+
+  if (updateResp.status != 200) {
+    console.error("Fehler beim Update der Beschreibung:", await updateResp.text());
+  }
+
+  await new Promise(r => setTimeout(r, 1500));
+  return created;
 }
 
 async function main() {
   const existing = await getLatestTournaments(200);
   console.log(`Found ${existing.length} tournaments`);
 
-  const missing = candidates.filter(
-    c => !existing.some(e => looksLike(e, c))
-  );
-
+  const missing = candidates.filter(c => !existing.some(e => looksLike(e, c)));
   const posts = missing.map(m => ({
     ...m,
     name: m.name(),
     description: m.description(),
-    "clock.limit": m.clock[0] * 60,
-    "clock.increment": m.clock[1],
+    'clock.limit': m.clock[0] * 60,
+    'clock.increment': m.clock[1],
     nbRounds: m.rounds,
     rated: m.rated,
     variant: m.variant,
@@ -83,23 +96,14 @@ async function main() {
 
   console.log(`Creating ${posts.length} tournaments`);
 
-  let lastLink: string | null = null;
-
-  for (const n of posts) {
-    // Falls es schon einen Link vom vorherigen Turnier gibt, füge ihn ein
-    if (lastLink) {
-      n.description = n.description + `\n\nNächstes Turnier: ${lastLink}`;
-    }
-
-    console.log(`${new Date(n.startsAt)} ${n.name}`);
-    if (!config.dryRun) {
-      const link = await createTournament(n);
-      if (link) {
-        lastLink = link; // merke den Link für die Beschreibung des vorherigen
-      }
-    }
-    await new Promise(r => setTimeout(r, 1500)); // etwas warten
-  }
+  await posts.reduce(
+    (seq, n) =>
+      seq.then(() => {
+        console.log(`${new Date(n.startsAt)} ${n.name}`);
+        if (!config.dryRun) return createTournament(n);
+      }),
+    Promise.resolve()
+  );
 }
 
 main();
