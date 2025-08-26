@@ -7,10 +7,9 @@ import dateIsAfter from 'date-fns/isAfter';
 import dateIsEqual from 'date-fns/isEqual';
 import { config } from './config';
 
-// Kandidaten: 10 Tage im Voraus
 const candidates = eachDayOfInterval({
   start: new Date(),
-  end: dateAdd(new Date(), { days: 10 }),
+  end: dateAdd(new Date(), { days: config.daysInAdvance }),
 })
   .flatMap(day =>
     config.dailyTournaments.map(blueprint => ({
@@ -23,8 +22,65 @@ const candidates = eachDayOfInterval({
   )
   .filter(c => dateIsAfter(c.startsAt, new Date()));
 
-// Vergleich, ob ein Turnier schon existiert
 const looksLike = (existing: any, candidate: any) =>
   dateIsEqual(new Date(existing.startsAt), candidate.startsAt) &&
   existing.clock.limit / 60 == candidate.clock[0] &&
-  existing.cloc
+  existing.clock.increment == candidate.clock[1];
+
+async function getLatestTournaments(nb: number) {
+  const response = await fetch(`${config.server}/api/team/${config.team}/swiss?max=${nb}`);
+  const body = await response.text();
+  return body
+    .split('\n')
+    .filter(line => line)
+    .map(line => JSON.parse(line));
+}
+
+async function createTournament(tour: any): Promise<any> {
+  const body = new URLSearchParams();
+  for (const k of Object.keys(tour)) body.append(k, String(tour[k]));
+  const response = await fetch(`${config.server}/api/swiss/new/${config.team}`, {
+    method: 'POST',
+    body,
+    headers: { Authorization: `Bearer ${config.oauthToken}` },
+  });
+  if (response.status != 200) {
+    const error = await response.text();
+    console.error(response.status, error);
+  } else {
+    console.log(`✅ Turnier erstellt: ${tour.name}`);
+  }
+  await new Promise(r => setTimeout(r, 1500));
+}
+
+async function main() {
+  const existing = await getLatestTournaments(200);
+  console.log(`Found ${existing.length} tournaments`);
+
+  const missing = candidates.filter(c => !existing.some(e => looksLike(e, c)));
+
+  const posts = missing.map(m => ({
+    ...m,
+    name: m.name(m),
+    description: m.description(m),
+    'clock.limit': m.clock[0] * 60,
+    'clock.increment': m.clock[1],
+    nbRounds: m.rounds,            // ✅ Pflichtfeld
+    rated: m.rated,
+    variant: m.variant,
+    startsAt: m.startsAt.getTime(),
+  }));
+
+  console.log(`Creating ${posts.length} tournaments`);
+
+  await posts.reduce(
+    (seq, n) =>
+      seq.then(() => {
+        console.log(`${new Date(n.startsAt)} ${n.name}`);
+        if (!config.dryRun) return createTournament(n);
+      }),
+    Promise.resolve()
+  );
+}
+
+main();
