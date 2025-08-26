@@ -1,10 +1,19 @@
 export const config = {
-  teamId: "testing-codes",      // dein Team auf Lichess
-  clock: "3+0",                 // Bedenkzeit (3 Minuten + 0 Sekunden)
-  rounds: 11,                   // Anzahl der Runden
-  rated: true,                  // gewertet (true = gewertet, false = Spaßturnier)
-  variant: "standard",          // Standard-Schach
-  startsAt: "16:00",            // Startzeit (lokale Uhrzeit, DE 16:00)
-  // Optional kannst du auch einen Namen hinzufügen:
-  name: "Daily Testing-Codes Swiss",
+  // API & Auth
+  oauthToken: process.env.OAUTH_TOKEN || "",   // Token kommt aus GitHub Secret
+  server: "https://lichess.org",              // Lichess-Server
+  team: "testing-codes",                      // Team-ID auf Lichess
+
+  // Turnier-Einstellungen
+  name: "Daily Testing-Codes Swiss",          // Turniername
+  clock: "3+0",                               // Bedenkzeit
+  rounds: 11,                                 // Anzahl Runden
+  rated: true,                                // gewertet
+  variant: "standard",                        // Schachvariante
+  startsAt: "16:00",                          // Startzeit (lokale Uhrzeit)
+
+  // Automatisierung
+  daysInAdvance: 0,                           // 0 = heute
+  dailyTournaments: true,                     // jeden Tag erstellen
+  dryRun: false,                              // true = nur testen, false = echt erstellen
 };
