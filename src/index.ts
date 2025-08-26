@@ -41,7 +41,6 @@ async function getLatestTournaments(nb: number) {
 async function createSwiss(tour: any): Promise<string | null> {
   const body = new URLSearchParams();
   for (const k of Object.keys(tour)) body.append(k, tour[k]);
-
   const response = await fetch(
     `${config.server}/api/swiss/new/${config.team}`,
     {
@@ -50,18 +49,28 @@ async function createSwiss(tour: any): Promise<string | null> {
       headers: { Authorization: `Bearer ${config.oauthToken}` },
     }
   );
-
   if (response.status != 200) {
     const error = await response.text();
     console.error("Swiss creation failed:", response.status, error);
     return null;
   }
-  const data = await response.json();
-  return data.id || null;
+  const loc = response.headers.get("location");
+  console.log("Swiss created:", loc);
+  return loc ? loc.split("/").pop()! : null;
 }
 
-async function updateSwissDescription(swissId: string, newDesc: string) {
-  const body = new URLSearchParams({ description: newDesc });
+async function updateSwissDescription(swissId: string, desc: string, tour: any) {
+  const body = new URLSearchParams({
+    name: tour.name,
+    description: desc,
+    "clock.limit": (tour.clock[0] * 60).toString(),
+    "clock.increment": tour.clock[1].toString(),
+    nbRounds: tour.rounds.toString(),
+    rated: tour.rated.toString(),
+    variant: tour.variant,
+    startsAt: tour.startsAt.getTime().toString(),
+  });
+
   const response = await fetch(`${config.server}/api/swiss/${swissId}/edit`, {
     method: "POST",
     body,
@@ -69,40 +78,34 @@ async function updateSwissDescription(swissId: string, newDesc: string) {
   });
 
   if (response.status != 200) {
-    const error = await response.text();
-    console.error("Update error:", response.status, error);
+    console.error("Update error:", response.status, await response.text());
   } else {
     console.log(`Swiss ${swissId} updated with next link`);
   }
 }
 
-async function createArena(startDate: Date, swissId: string) {
+async function createArena(name: string, description: string, startDate: Date) {
   const body = new URLSearchParams({
-    name: "Daily Testing-Codes Arena",
-    clockTime: "3",
-    clockIncrement: "0",
+    name,
+    description,
     minutes: "120",
-    startDate: Math.floor(startDate.getTime() / 1000).toString(),
-    description: `Arena vor dem Swiss!\n\nNächstes Swiss: https://lichess.org/swiss/${swissId}`,
+    "clock.limit": (3 * 60).toString(),
+    "clock.increment": "0",
+    startDate: startDate.getTime().toString(), // FIX: millis, nicht sekunden
     rated: "true",
     variant: "standard",
   });
 
-  const response = await fetch(
-    `${config.server}/api/tournament?team=${config.team}`,
-    {
-      method: "POST",
-      body,
-      headers: { Authorization: `Bearer ${config.oauthToken}` },
-    }
-  );
+  const response = await fetch(`${config.server}/api/tournament`, {
+    method: "POST",
+    body,
+    headers: { Authorization: `Bearer ${config.oauthToken}` },
+  });
 
   if (response.status != 200) {
-    const error = await response.text();
-    console.error("Arena creation failed:", response.status, error);
+    console.error("Arena creation failed:", response.status, await response.text());
   } else {
-    const data = await response.json();
-    console.log(`Arena created: https://lichess.org/tournament/${data.id}`);
+    console.log("Arena created:", await response.text());
   }
 }
 
@@ -112,42 +115,47 @@ async function main() {
 
   const missing = candidates.filter(c => !existing.some(e => looksLike(e, c)));
 
+  const posts = missing.map(m => ({
+    ...m,
+    name: m.name(),
+    description: m.description(),
+    "clock.limit": m.clock[0] * 60,
+    "clock.increment": m.clock[1],
+    nbRounds: m.rounds,
+    rated: m.rated,
+    variant: m.variant,
+    startsAt: m.startsAt,
+  }));
+
+  console.log(`Creating ${posts.length} tournaments`);
+
   let lastSwissId: string | null = null;
 
-  for (let i = 0; i < missing.length; i++) {
-    const m = missing[i];
-
-    const swissPost: any = {
-      name: m.name(),
-      description: m.description().replace("{{nextLink}}", "—"),
-      "clock.limit": (m.clock[0] * 60).toString(),
-      "clock.increment": m.clock[1].toString(),
-      nbRounds: m.rounds.toString(),
-      rated: m.rated.toString(),
-      variant: m.variant,
-      startsAt: m.startsAt.getTime().toString(),
-    };
+  for (const m of posts) {
+    console.log(`${new Date(m.startsAt)} ${m.name}`);
 
     if (!config.dryRun) {
-      const swissId = await createSwiss(swissPost);
+      const swissId = await createSwiss(m);
+      if (!swissId) continue;
 
-      if (swissId) {
-        console.log(`Swiss created: https://lichess.org/swiss/${swissId}`);
-
-        // falls es ein vorheriges Swiss gab → Beschreibung aktualisieren
-        if (lastSwissId) {
-          await updateSwissDescription(
-            lastSwissId,
-            `Tägliches Teamturnier!\n\nNächstes Turnier: https://lichess.org/swiss/${swissId}`
-          );
-        }
-
-        // Arena 2h vorher mit Link auf dieses Swiss
-        const arenaStart = new Date(m.startsAt.getTime() - 2 * 60 * 60 * 1000);
-        await createArena(arenaStart, swissId);
-
-        lastSwissId = swissId;
+      // Swiss mit Link zum letzten Swiss updaten
+      if (lastSwissId) {
+        await updateSwissDescription(
+          lastSwissId,
+          `Tägliches Teamturnier!\n\nNächstes Turnier: https://lichess.org/swiss/${swissId}`,
+          m
+        );
       }
+
+      // Arena 2 Stunden vor Swiss
+      const arenaStart = dateAdd(m.startsAt, { hours: -2 });
+      await createArena(
+        `${m.name} Arena`,
+        `Aufwärm-Arena vor dem Swiss!\n\nNächstes Swiss: https://lichess.org/swiss/${swissId}`,
+        arenaStart
+      );
+
+      lastSwissId = swissId;
     }
   }
 }
