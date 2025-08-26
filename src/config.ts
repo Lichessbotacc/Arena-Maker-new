@@ -1,20 +1,24 @@
 export const config = {
-  oauthToken: process.env.OAUTH_TOKEN || "",
-  server: "https://lichess.org",
-  team: "testing-codes",
+  server: 'https://lichess.org',
+  team: 'testing-codes',       // 👈 dein Team
+  oauthToken: process.env.OAUTH_TOKEN || '',
 
-  daysInAdvance: 0,
+  // Wie viele Tage im Voraus Turniere erstellt werden sollen
+  daysInAdvance: 1,
+
+  // Kein Testlauf – wirklich erstellen
   dryRun: false,
 
+  // Hier definierst du deine täglichen Turniere
   dailyTournaments: [
     {
-      name: (m: any) => "Daily Testing-Codes Swiss",
-      description: (m: any) => "Tägliches 3+0 Standard-Swiss für das Team Testing-Codes.",
-      time: "16:00",
-      clock: [3, 0],
-      rounds: 11,
+      time: '16:00', // Startzeit UTC (18:00 deutscher Sommerzeit)
+      clock: [3, 0], // 3+0
+      rounds: 11,    // Anzahl Runden
       rated: true,
-      variant: "standard",
+      variant: 'standard',
+      name: () => `Daily Testing-Codes Swiss`,
+      description: () => `11-Runden 3+0 gewertetes Standard-Swiss-Turnier für Team Testing-Codes`,
     },
   ],
 };
