@@ -38,7 +38,7 @@ async function getLatestTournaments(nb: number) {
 
 async function createTournament(tour: any): Promise<any> {
   const body = new URLSearchParams();
-  for (const k of Object.keys(tour)) body.append(k, String(tour[k]));
+  for (const k of Object.keys(tour)) body.append(k, tour[k]);
   const response = await fetch(`${config.server}/api/swiss/new/${config.team}`, {
     method: 'POST',
     body,
@@ -47,8 +47,6 @@ async function createTournament(tour: any): Promise<any> {
   if (response.status != 200) {
     const error = await response.text();
     console.error(response.status, error);
-  } else {
-    console.log(`✅ Turnier erstellt: ${tour.name}`);
   }
   await new Promise(r => setTimeout(r, 1500));
 }
@@ -56,23 +54,28 @@ async function createTournament(tour: any): Promise<any> {
 async function main() {
   const existing = await getLatestTournaments(200);
   console.log(`Found ${existing.length} tournaments`);
-
   const missing = candidates.filter(c => !existing.some(e => looksLike(e, c)));
 
-  const posts = missing.map(m => ({
-    ...m,
-    name: m.name(m),
-    description: m.description(m),
-    'clock.limit': m.clock[0] * 60,
-    'clock.increment': m.clock[1],
-    nbRounds: m.rounds,            // ✅ Pflichtfeld
-    rated: m.rated,
-    variant: m.variant,
-    startsAt: m.startsAt.getTime(),
-  }));
+  const posts = missing.map((m, i, arr) => {
+    const next = arr[i + 1];
+    const nextLink = next
+      ? `${config.server}/swiss/${config.team}/${Math.floor(next.startsAt.getTime() / 1000)}`
+      : 'Bald verfügbar!';
+
+    return {
+      ...m,
+      name: m.name(),
+      description: m.description().replace('{{nextLink}}', nextLink),
+      'clock.limit': m.clock[0] * 60,
+      'clock.increment': m.clock[1],
+      nbRounds: m.rounds,
+      rated: m.rated,
+      variant: m.variant,
+      startsAt: m.startsAt.getTime(),
+    };
+  });
 
   console.log(`Creating ${posts.length} tournaments`);
-
   await posts.reduce(
     (seq, n) =>
       seq.then(() => {
