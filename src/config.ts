@@ -1,59 +1,30 @@
-const defaults = {
-  variant: 'standard',
-  rated: true,
-  chatFor: 30,
-  description: (_conf: any) => '',
+import { Config } from "./types";
+
+// Konfiguration für das Swiss-Maker Skript
+const config: Config = {
+  teamId: "testing-codes",          // Team-Name aus Lichess-URL
+  schedule: {
+    // Jeden Tag um 16:00 Uhr (Europe/Berlin Zeitzone)
+    timezone: "Europe/Berlin",
+    daily: [
+      {
+        hour: 16,
+        minute: 0,
+      },
+    ],
+  },
+  tournament: {
+    clock: {
+      limit: 180,     // 3 Minuten = 180 Sekunden
+      increment: 0,   // 0 Sekunden Inkrement
+    },
+    minutes: 120,     // Turnierdauer: 120 Minuten (2 Stunden)
+    rounds: 0,        // 0 = automatische Runden nach Dauer
+    rated: true,      // Bewertetes Turnier
+    variant: "standard", // Schach-Variante (standard = Normalschach)
+    name: "Daily 3+0 Swiss",  // Name des Turniers
+    description: "Tägliches 3+0 Turnier der Testing Codes Gruppe.",
+  },
 };
 
-export const config = {
-  server: 'https://lichess.org',
-  /* server: 'http://l.org', */
-  team: 'lichess-swiss',
-  daysInAdvance: 21,
-  dryRun: false,
-  oauthToken: process.env['OAUTH_TOKEN'],
-  dailyTournaments: [
-    {
-      ...defaults,
-      time: '16:00',
-      clock: [30, 0],
-      name: (_conf: any) => `Daily Classical`,
-      nbRounds: 5,
-      'conditions.nbRatedGame.nb': 5,
-      description: (_conf: any) =>
-        'Games can take up to one hour, so you will have to wait for pairings. We also offer [faster-paced swiss tournaments](https://lichess.org/team/lichess-swiss/tournaments).',
-    },
-    {
-      ...defaults,
-      time: '17:00',
-      clock: [3, 0],
-      name: (_conf: any) => `Daily SuperBlitz`,
-      nbRounds: 15,
-      'conditions.nbRatedGame.nb': 12,
-    },
-    {
-      ...defaults,
-      time: '19:00',
-      clock: [5, 0],
-      name: (_conf: any) => `Daily Blitz`,
-      nbRounds: 11,
-      'conditions.nbRatedGame.nb': 12,
-    },
-    {
-      ...defaults,
-      time: '21:00',
-      clock: [10, 0],
-      name: (_conf: any) => `Daily Rapid`,
-      nbRounds: 7,
-      'conditions.nbRatedGame.nb': 8,
-    },
-    {
-      ...defaults,
-      time: '21:00',
-      clock: [1, 0],
-      name: (_conf: any) => `Daily Bullet`,
-      nbRounds: 25,
-      'conditions.nbRatedGame.nb': 15,
-    },
-  ],
-};
+export default config;
