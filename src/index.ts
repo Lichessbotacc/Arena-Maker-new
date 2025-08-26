@@ -1,34 +1,30 @@
-async function createTournament(tour: any): Promise<any> {
-  const body = new URLSearchParams();
-  for (const k of Object.keys(tour)) body.append(k, tour[k]);
+import fetch from 'node-fetch';
+import { URLSearchParams } from 'url';
+import eachDayOfInterval from 'date-fns/eachDayOfInterval';
+import dateAdd from 'date-fns/add';
+import dateSet from 'date-fns/set';
+import dateIsAfter from 'date-fns/isAfter';
+import dateIsEqual from 'date-fns/isEqual';
+import { config } from './config';
 
-  const response = await fetch(`${config.server}/api/swiss/new/${config.team}`, {
-    method: 'POST',
-    body,
-    headers: { Authorization: `Bearer ${config.oauthToken}` },
-  });
+// Kandidaten: 10 Tage im Voraus
+const candidates = eachDayOfInterval({
+  start: new Date(),
+  end: dateAdd(new Date(), { days: 10 }),
+})
+  .flatMap(day =>
+    config.dailyTournaments.map(blueprint => ({
+      ...blueprint,
+      startsAt: dateSet(day, {
+        hours: parseInt(blueprint.time.split(':')[0]),
+        minutes: parseInt(blueprint.time.split(':')[1]),
+      }),
+    }))
+  )
+  .filter(c => dateIsAfter(c.startsAt, new Date()));
 
-  if (response.status != 200) {
-    const error = await response.text();
-    console.error(response.status, error);
-    return null;
-  }
-
-  const data = await response.json(); // enthält Turnier-Infos inkl. ID
-  const tournamentId = data.id;
-  console.log("Created tournament:", tournamentId);
-
-  // Beschreibung mit Link zum nächsten Turnier
-  const description = tour.description.replace(
-    '{{nextLink}}',
-    `https://lichess.org/swiss/${tournamentId}`
-  );
-
-  await fetch(`${config.server}/api/swiss/${tournamentId}/edit`, {
-    method: 'POST',
-    body: new URLSearchParams({ description }),
-    headers: { Authorization: `Bearer ${config.oauthToken}` },
-  });
-
-  await new Promise(r => setTimeout(r, 1500));
-}
+// Vergleich, ob ein Turnier schon existiert
+const looksLike = (existing: any, candidate: any) =>
+  dateIsEqual(new Date(existing.startsAt), candidate.startsAt) &&
+  existing.clock.limit / 60 == candidate.clock[0] &&
+  existing.cloc
