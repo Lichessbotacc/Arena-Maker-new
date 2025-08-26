@@ -1,29 +1,27 @@
 import { Config } from "./types";
 
-// Konfiguration für das Swiss-Maker Skript
+// Konfiguration für Swiss-Maker
 const config: Config = {
-  teamId: "testing-codes",          // Team-Name aus Lichess-URL
+  teamId: "testing-codes",   // Team-ID aus der Lichess-URL
   schedule: {
-    // Jeden Tag um 16:00 Uhr (Europe/Berlin Zeitzone)
-    timezone: "Europe/Berlin",
+    timezone: "Europe/Berlin", // lokale Zeitzone (für 16:00 Uhr in Deutschland)
     daily: [
       {
-        hour: 16,
-        minute: 0,
+        hour: 16,   // Stunde des Starts
+        minute: 0,  // Minute des Starts
       },
     ],
   },
   tournament: {
     clock: {
-      limit: 180,     // 3 Minuten = 180 Sekunden
-      increment: 0,   // 0 Sekunden Inkrement
+      limit: 180,   // 180 Sekunden = 3 Minuten
+      increment: 0, // kein Inkrement
     },
-    minutes: 120,     // Turnierdauer: 120 Minuten (2 Stunden)
-    rounds: 0,        // 0 = automatische Runden nach Dauer
-    rated: true,      // Bewertetes Turnier
-    variant: "standard", // Schach-Variante (standard = Normalschach)
-    name: "Daily 3+0 Swiss",  // Name des Turniers
-    description: "Tägliches 3+0 Turnier der Testing Codes Gruppe.",
+    rounds: 11,          // feste Rundenzahl: 11
+    rated: true,         // gewertet
+    variant: "standard", // Normales Schach
+    name: "Daily 3+0 Swiss (11 Runden)",
+    description: "Tägliches 3+0 Standard-Schachturnier mit 11 Runden im Team Testing Codes.",
   },
 };
 
