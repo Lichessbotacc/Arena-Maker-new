@@ -57,10 +57,11 @@ async function main() {
   const missing = candidates.filter(c => !existing.some(e => looksLike(e, c)));
   const posts = missing.map(m => ({
     ...m,
-    name: m.name(m),
-    description: m.description(m),
+    name: m.name(),
+    description: m.description(),
     'clock.limit': m.clock[0] * 60,
     'clock.increment': m.clock[1],
+    nbRounds: m.rounds, // 👈 wichtig: Anzahl Runden
     startsAt: m.startsAt.getTime(),
   }));
   console.log(`Creating ${posts.length} tournaments`);
