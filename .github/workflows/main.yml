@@ -1,0 +1,54 @@
+import { Config } from "./types";
+
+// Konfiguration für Swiss-Maker
+const config: Config = {
+  teamId: "testing-codes",   // Team-ID aus der Lichess-URL
+  schedule: {
+    timezone: "Europe/Berlin", // lokale Zeitzone
+    daily: [
+      {
+        hour: 16,   // Startzeit: 16:00 Uhr
+        minute: 0,
+      },
+    ],
+  },
+  tournament: {
+    clock: {
+      limit: 180,   // 180 Sekunden = 3 Minuten
+      increment: 0, // kein Inkrement
+    },
+    rounds: 11,          // feste Rundenzahl: 11
+    rated: true,         // gewertet
+    variant: "standard", // Normales Schach
+    name: "Daily 3+0 Swiss (11 Runden)",
+    description: "Tägliches 3+0 Standard-Schachturnier mit 11 Runden im Team Testing Codes.",
+  },
+};
+
+export default config;
+
+name: Daily Swiss Tournament
+
+on:
+  workflow_dispatch:   # erlaubt manuelles Starten
+  schedule:
+    - cron: "0 14 * * *"   # Täglich 14:00 UTC = 16:00 Deutschland (Sommerzeit)
+
+jobs:
+  swiss:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Run Swiss Maker
+        run: OAUTH_TOKEN=${{ secrets.LICHESS_TOKEN }} yarn dev
