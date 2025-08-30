@@ -3,32 +3,32 @@ import { URLSearchParams } from "url";
 
 export const config = {
   server: "https://lichess.org",
-  team: "testing-codes", // Team-ID
+  team: "testing-codes", // Team-Slug oder ID
   oauthToken: process.env.OAUTH_TOKEN!,
-  daysInAdvance: 1,
+  daysInAdvance: 1, // wie viele Tage im Voraus Arenen erstellt werden
   dryRun: false,
   arena: {
     name: () => "Hourly Ultrabullet",
     description: (nextLink: string) => `Next: ${nextLink}`,
-    clockTime: 0.25,
+    clockTime: 0.25, // 15 Sekunden
     clockIncrement: 0,
-    minutes: 120,
+    minutes: 120, // Dauer: 2 Stunden
     rated: true,
     variant: "standard",
-    intervalHours: 2,
+    intervalHours: 2, // alle 2 Stunden eine Arena
   },
 };
 
 function nextEvenUtcHour(from: Date): Date {
   const d = new Date(from);
   const h = d.getUTCHours();
-  const nextEven = Math.floor(h / 2) * 2 + 2;
+  const nextEven = Math.floor(h / 2) * 2 + 2; // nächste gerade Stunde
   d.setUTCHours(nextEven, 0, 0, 0);
   return d;
 }
 
 async function createArena(startDate: Date, nextLink: string) {
-  const startDateMs = startDate.getTime();
+  const startDateMs = startDate.getTime(); // ✅ Lichess erwartet ms
 
   const body = new URLSearchParams({
     name: config.arena.name(),
@@ -38,7 +38,7 @@ async function createArena(startDate: Date, nextLink: string) {
     minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
-    startDate: String(startDateMs), // in ms
+    startDate: String(startDateMs),
   });
 
   console.log(`Creating arena at ${startDate.toISOString()} (ms=${startDateMs})`);
@@ -49,7 +49,7 @@ async function createArena(startDate: Date, nextLink: string) {
   }
 
   const res = await fetch(
-    `${config.server}/api/team/${config.team}/arena/new`,
+    `${config.server}/api/team/${config.team}/arena`, // ✅ richtiges Endpoint
     {
       method: "POST",
       headers: {
@@ -83,6 +83,12 @@ async function main() {
     const startDate = new Date(
       firstStart.getTime() + i * config.arena.intervalHours * 60 * 60 * 1000
     );
+
+    // ✅ Sicherheits-Puffer: mindestens 5 Min in die Zukunft
+    const minFuture = Date.now() + 5 * 60 * 1000;
+    if (startDate.getTime() <= minFuture) {
+      startDate.setUTCHours(startDate.getUTCHours() + config.arena.intervalHours);
+    }
 
     const arenaUrl = await createArena(startDate, prevUrl ?? "tba");
     if (arenaUrl) prevUrl = arenaUrl;
