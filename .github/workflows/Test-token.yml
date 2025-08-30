@@ -1,12 +1,11 @@
 name: Test Lichess Token
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   test-token:
     runs-on: ubuntu-latest
-
     steps:
       - name: Test Token mit Curl
         run: |
