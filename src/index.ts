@@ -1,42 +1,30 @@
 import fetch from "node-fetch";
-import { URLSearchParams } from "url";
+import { config } from "./config";
 
-export const config = {
-  server: "https://lichess.org",
-  team: "testing-codes", // Team-Slug aus der Lichess-URL
-  oauthToken: process.env.OAUTH_TOKEN!,
-  daysInAdvance: 1, // wie viele Tage im Voraus Arenen erstellt werden
-  dryRun: false,
-  arena: {
-    name: () => "Hourly Ultrabullet",
-    description: (nextLink: string) => `Next: ${nextLink}`,
-    clockTime: 0.25, // Minuten → 15 Sekunden
-    clockIncrement: 0,
-    minutes: 90, // Länge der Arena in Minuten
-    rated: true,
-    variant: "standard",
-    intervalHours: 2, // alle 2 Stunden
-  },
-};
-
-async function createArena(startDate: Date, nextLink: string) {
-  // API erwartet Sekunden für clock.limit
-  const body = new URLSearchParams({
+// Hilfsfunktion: Request-Body für Arena bauen
+function buildArenaRequest(startDate: Date) {
+  return {
     name: config.arena.name(),
-    description: config.arena.description(nextLink),
-    "clock.limit": Math.round(config.arena.clockTime * 60).toString(), // Sekunden
-    "clock.increment": config.arena.clockIncrement.toString(),
-    minutes: config.arena.minutes.toString(),
-    rated: config.arena.rated ? "true" : "false",
+    description: config.arena.description(),
+    "clock.limit": Math.round(config.arena.clockTime * 60), // Minuten -> Sekunden
+    "clock.increment": config.arena.clockIncrement,
+    minutes: config.arena.minutes,
+    rated: config.arena.rated,
     variant: config.arena.variant,
     startDate: startDate.toISOString(),
-  });
+    teamId: config.team,
+  };
+}
 
-  console.log("➡️ Arena request body:", Object.fromEntries(body));
+// Arena bei Lichess anlegen
+async function createArena(startDate: Date) {
+  const body = buildArenaRequest(startDate);
+
+  console.log("➡️ Arena request body:", body);
 
   if (config.dryRun) {
-    console.log("✅ DRY RUN Arena:", Object.fromEntries(body));
-    return "dry-run-url";
+    console.log("✅ DRY RUN Arena:", body);
+    return;
   }
 
   const res = await fetch(
@@ -45,58 +33,45 @@ async function createArena(startDate: Date, nextLink: string) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${config.oauthToken}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
-      body,
+      body: JSON.stringify(body),
     }
   );
 
   if (!res.ok) {
-    const err = await res.text();
-    console.error("Arena creation failed:", err);
-    return;
+    const text = await res.text();
+    console.error("Arena creation failed:", text);
+  } else {
+    const data = await res.json();
+    console.log("✅ Arena created:", data);
   }
-
-  const url = res.headers.get("Location");
-  console.log("✅ Arena created:", url);
-  return url;
 }
 
+// Startpunkt
 async function main() {
+  console.log(`Creating arenas...`);
+
   const now = new Date();
-  const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
-  const totalArenas = arenasPerDay * config.daysInAdvance;
-
-  console.log(`Creating ${totalArenas} arenas`);
-
-  let prevUrl: string | null = null;
-
-  for (let i = 0; i < totalArenas; i++) {
-    const startDate = new Date(now);
-    startDate.setUTCHours(
-      Math.floor(now.getUTCHours() / config.arena.intervalHours) *
-        config.arena.intervalHours,
+  const firstArena = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      config.arena.startHour,
       0,
       0,
       0
-    );
-    startDate.setUTCHours(
-      startDate.getUTCHours() + (i + 1) * config.arena.intervalHours
-    );
+    )
+  );
 
-    // mindestens 2 Minuten in der Zukunft
-    if (startDate.getTime() < Date.now() + 2 * 60 * 1000) {
-      startDate.setTime(Date.now() + 2 * 60 * 1000);
-    }
-
-    console.log(
-      `Creating arena at ${startDate.toISOString()} (ms=${startDate.getTime()})`
+  for (let i = 0; i < 12; i++) {
+    const startDate = new Date(
+      firstArena.getTime() + i * config.arena.frequencyMinutes * 60000
     );
-    const arenaUrl = await createArena(startDate, prevUrl ?? "tba");
-    if (arenaUrl) {
-      prevUrl = arenaUrl;
-    }
+    console.log(`Creating arena at ${startDate.toISOString()}`);
+    await createArena(startDate);
   }
 }
 
-main().catch((err) => console.error(err));
+main().catch((e) => console.error(e));
