@@ -3,55 +3,67 @@ import { URLSearchParams } from "url";
 
 export const config = {
   server: "https://lichess.org",
-  team: "testing-codes",
-  oauthToken: process.env.OAUTH_TOKEN!, // muss in GitHub Actions gesetzt sein
-  daysInAdvance: 1, // wie viele Tage im Voraus Arenen erstellt werden
+  team: "testing-codes", // Team-ID
+  oauthToken: process.env.OAUTH_TOKEN!,
+  daysInAdvance: 1,
   dryRun: false,
   arena: {
     name: () => "Hourly Ultrabullet",
     description: (nextLink: string) => `Next: ${nextLink}`,
-    clockTime: 0.25, // 15 Sekunden (Ultrabullet)
+    clockTime: 0.25,
     clockIncrement: 0,
-    minutes: 120, // Länge: 2 Stunden
+    minutes: 120,
     rated: true,
     variant: "standard",
-    intervalHours: 2, // alle 2 Stunden eine Arena
+    intervalHours: 2,
   },
 };
 
+function nextEvenUtcHour(from: Date): Date {
+  const d = new Date(from);
+  const h = d.getUTCHours();
+  const nextEven = Math.floor(h / 2) * 2 + 2;
+  d.setUTCHours(nextEven, 0, 0, 0);
+  return d;
+}
+
 async function createArena(startDate: Date, nextLink: string) {
+  const startDateMs = startDate.getTime();
+
   const body = new URLSearchParams({
     name: config.arena.name(),
     description: config.arena.description(nextLink),
-    clockTime: config.arena.clockTime.toString(),
-    clockIncrement: config.arena.clockIncrement.toString(),
-    minutes: config.arena.minutes.toString(),
+    clockTime: String(config.arena.clockTime),
+    clockIncrement: String(config.arena.clockIncrement),
+    minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
-    startDate: Math.floor(startDate.getTime() / 1000).toString(), // ✅ Unix Timestamp
-    teamId: config.team,
+    startDate: String(startDateMs), // in ms
   });
+
+  console.log(`Creating arena at ${startDate.toISOString()} (ms=${startDateMs})`);
 
   if (config.dryRun) {
     console.log("DRY RUN Arena:", Object.fromEntries(body));
-    return;
+    return "dry-run";
   }
 
-  console.log("Creating arena starting at:", startDate.toISOString());
-
-  const res = await fetch(`${config.server}/api/tournament`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.oauthToken}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
+  const res = await fetch(
+    `${config.server}/api/team/${config.team}/arena/new`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.oauthToken}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+      body,
+    }
+  );
 
   if (!res.ok) {
-    const err = await res.text();
-    console.error("Arena creation failed:", res.status, err);
-    return;
+    console.error("Arena creation failed:", res.status, await res.text());
+    return null;
   }
 
   const data = await res.json();
@@ -61,47 +73,20 @@ async function createArena(startDate: Date, nextLink: string) {
 }
 
 async function main() {
-  if (!config.oauthToken) {
-    throw new Error("No OAuth token provided. Did you set OAUTH_TOKEN?");
-  }
-  console.log("Using Lichess token:", config.oauthToken.slice(0, 8) + "...");
-
   const now = new Date();
+  const firstStart = nextEvenUtcHour(now);
   const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
   const totalArenas = arenasPerDay * config.daysInAdvance;
 
-  console.log(`Creating ${totalArenas} arenas in advance`);
-
   let prevUrl: string | null = null;
-
   for (let i = 0; i < totalArenas; i++) {
-    const startDate = new Date(now);
-
-    // aktuelle Stunde
-    const currentHour = now.getUTCHours();
-
-    // nächste gerade 2-Stunde berechnen (exakt 00:00, 02:00, 04:00 …)
-    const nextEvenHour = Math.ceil(
-      (currentHour + (i + 1) * config.arena.intervalHours) / 2
-    ) * 2;
-
-    // Basis auf Mitternacht setzen
-    startDate.setUTCHours(0, 0, 0, 0);
-
-    // nächste 2-Stunden-Marke einsetzen
-    startDate.setUTCHours(nextEvenHour);
-
-    // ✅ sicherstellen, dass Startzeit mindestens 5 Min in der Zukunft liegt
-    const minFuture = Date.now() + 5 * 60 * 1000;
-    if (startDate.getTime() <= minFuture) {
-      startDate.setUTCHours(startDate.getUTCHours() + config.arena.intervalHours);
-    }
+    const startDate = new Date(
+      firstStart.getTime() + i * config.arena.intervalHours * 60 * 60 * 1000
+    );
 
     const arenaUrl = await createArena(startDate, prevUrl ?? "tba");
-    if (arenaUrl) {
-      prevUrl = arenaUrl;
-    }
+    if (arenaUrl) prevUrl = arenaUrl;
   }
 }
 
-main().catch((err) => console.error(err));
+main().catch(console.error);
