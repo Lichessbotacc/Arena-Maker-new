@@ -3,16 +3,16 @@ import { URLSearchParams } from "url";
 
 export const config = {
   server: "https://lichess.org",
-  team: "testing-codes",                // dein Team
-  oauthToken: process.env.OAUTH_TOKEN!, // GitHub Secret
-  daysInAdvance: 1,                     // wie viele Tage im Voraus Arenen erstellt werden
-  dryRun: false,                        // auf true lassen zum Testen
+  team: "testing-codes", // Team-Slug aus der Lichess-URL
+  oauthToken: process.env.OAUTH_TOKEN!,
+  daysInAdvance: 1, // wie viele Tage im Voraus Arenen erstellt werden
+  dryRun: false,
   arena: {
     name: () => "Hourly Ultrabullet",
     description: (nextLink: string) => `Next: ${nextLink}`,
-    clockTime: 0.25,  // 15 Sekunden = Ultrabullet
+    clockTime: 0.25, // Minuten → 15 Sekunden
     clockIncrement: 0,
-    minutes: 90,      // Länge der Arena in Minuten
+    minutes: 90, // Länge der Arena in Minuten
     rated: true,
     variant: "standard",
     intervalHours: 2, // alle 2 Stunden
@@ -20,34 +20,36 @@ export const config = {
 };
 
 async function createArena(startDate: Date, nextLink: string) {
+  // API erwartet Sekunden für clock.limit
   const body = new URLSearchParams({
     name: config.arena.name(),
     description: config.arena.description(nextLink),
-    clockTime: config.arena.clockTime.toString(),
-    clockIncrement: config.arena.clockIncrement.toString(),
+    "clock.limit": Math.round(config.arena.clockTime * 60).toString(), // Sekunden
+    "clock.increment": config.arena.clockIncrement.toString(),
     minutes: config.arena.minutes.toString(),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
     startDate: startDate.toISOString(),
-    teamId: config.team,
   });
 
-  console.log(`Creating arena at ${startDate.toISOString()} (ms=${startDate.getTime()})`);
   console.log("➡️ Arena request body:", Object.fromEntries(body));
 
   if (config.dryRun) {
     console.log("✅ DRY RUN Arena:", Object.fromEntries(body));
-    return `dry-run-url`;
+    return "dry-run-url";
   }
 
-  const res = await fetch(`${config.server}/api/team/${config.team}/arena/new`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.oauthToken}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
+  const res = await fetch(
+    `${config.server}/api/team/${config.team}/arena/new`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.oauthToken}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    }
+  );
 
   if (!res.ok) {
     const err = await res.text();
@@ -56,7 +58,7 @@ async function createArena(startDate: Date, nextLink: string) {
   }
 
   const url = res.headers.get("Location");
-  console.log("🎉 Arena created:", url);
+  console.log("✅ Arena created:", url);
   return url;
 }
 
@@ -71,12 +73,25 @@ async function main() {
 
   for (let i = 0; i < totalArenas; i++) {
     const startDate = new Date(now);
-    startDate.setUTCMinutes(startDate.getUTCMinutes() + 5); // mindestens 5 Min. in Zukunft
     startDate.setUTCHours(
-      Math.floor(startDate.getUTCHours() / config.arena.intervalHours) * config.arena.intervalHours
+      Math.floor(now.getUTCHours() / config.arena.intervalHours) *
+        config.arena.intervalHours,
+      0,
+      0,
+      0
     );
-    startDate.setUTCHours(startDate.getUTCHours() + (i + 1) * config.arena.intervalHours, 0, 0, 0);
+    startDate.setUTCHours(
+      startDate.getUTCHours() + (i + 1) * config.arena.intervalHours
+    );
 
+    // mindestens 2 Minuten in der Zukunft
+    if (startDate.getTime() < Date.now() + 2 * 60 * 1000) {
+      startDate.setTime(Date.now() + 2 * 60 * 1000);
+    }
+
+    console.log(
+      `Creating arena at ${startDate.toISOString()} (ms=${startDate.getTime()})`
+    );
     const arenaUrl = await createArena(startDate, prevUrl ?? "tba");
     if (arenaUrl) {
       prevUrl = arenaUrl;
