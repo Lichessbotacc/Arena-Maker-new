@@ -28,7 +28,7 @@ async function createArena(startDate: Date, nextLink: string) {
     minutes: config.arena.minutes.toString(),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
-    startDate: Math.floor(startDate.getTime() / 1000).toString(), // ✅ Unix Timestamp in Sekunden
+    startDate: Math.floor(startDate.getTime() / 1000).toString(), // ✅ Unix Timestamp
     teamId: config.team,
   });
 
@@ -76,10 +76,23 @@ async function main() {
 
   for (let i = 0; i < totalArenas; i++) {
     const startDate = new Date(now);
-    // auf gerade 2h-Stunde runden
-    startDate.setUTCHours(Math.floor(now.getUTCHours() / 2) * 2, 0, 0, 0);
-    // + Intervall draufpacken
-    startDate.setUTCHours(startDate.getUTCHours() + (i + 1) * config.arena.intervalHours);
+
+    // aktuelle Stunde
+    const currentHour = now.getUTCHours();
+
+    // nächste gerade 2-Stunde berechnen (exakt 00:00, 02:00, 04:00 ...)
+    const nextEvenHour = Math.ceil((currentHour + (i + 1) * config.arena.intervalHours) / 2) * 2;
+
+    // auf Mitternacht setzen
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    // nächste 2-Stunden-Marke einsetzen
+    startDate.setUTCHours(nextEvenHour);
+
+    // wenn Startzeit <= jetzt → ins nächste Datum schieben
+    if (startDate <= now) {
+      startDate.setDate(startDate.getDate() + 1);
+    }
 
     const arenaUrl = await createArena(startDate, prevUrl ?? "tba");
     if (arenaUrl) {
