@@ -1,7 +1,7 @@
 name: Test Lichess Token
 
 on:
-  workflow_dispatch:   # manuelles Starten im GitHub UI
+  workflow_dispatch: 
 
 jobs:
   test-token:
