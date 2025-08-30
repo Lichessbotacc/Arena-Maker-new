@@ -6,13 +6,13 @@ export const config = {
   team: "testing-codes",               // dein Team
   oauthToken: process.env.OAUTH_TOKEN!,// GitHub Secret
   daysInAdvance: 1,                    // wie viele Tage im Voraus
-  dryRun: true,                        // ⚡ TESTMODUS: nichts wird erstellt
+  dryRun: false,                        // ⚡ TESTMODUS: nichts wird erstellt
   arena: {
     name: () => "Hourly Ultrabullet",
     description: (nextLink: string) => `Next: ${nextLink}`,
     clockTime: 0.25,                   // 15 Sekunden (Ultrabullet)
     clockIncrement: 0,
-    minutes: 120,                      // 2 Stunden Turnierdauer
+    minutes: 90,                      // 2 Stunden Turnierdauer
     rated: true,
     variant: "standard",
     intervalHours: 2,                  // alle 2 Stunden
