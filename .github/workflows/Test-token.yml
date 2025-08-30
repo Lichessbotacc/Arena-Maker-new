@@ -1,17 +1,23 @@
 name: Test Lichess Token
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # manuelles Starten möglich
 
 jobs:
-  test-token:
+  test:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Test Token mit Curl
-        run: |
-          echo "Teste Lichess Token..."
-          curl -v -H "Authorization: Bearer $OAUTH_TOKEN" \
-               -d "name=TestArena&minutes=10&clockTime=1&clockIncrement=0&rated=true&variant=standard&startDate=2025-12-01T12:00:00Z&teamId=testing-codes" \
-               https://lichess.org/api/team/testing-codes/arena/new
-        env:
-          OAUTH_TOKEN: ${{ secrets.LICHESS_TOKEN }}
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Run Arena Maker
+        run: OAUTH_TOKEN=${{ secrets.LICHESS_TOKEN }} yarn dev
