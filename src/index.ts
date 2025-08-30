@@ -80,18 +80,21 @@ async function main() {
     // aktuelle Stunde
     const currentHour = now.getUTCHours();
 
-    // nächste gerade 2-Stunde berechnen (exakt 00:00, 02:00, 04:00 ...)
-    const nextEvenHour = Math.ceil((currentHour + (i + 1) * config.arena.intervalHours) / 2) * 2;
+    // nächste gerade 2-Stunde berechnen (exakt 00:00, 02:00, 04:00 …)
+    const nextEvenHour = Math.ceil(
+      (currentHour + (i + 1) * config.arena.intervalHours) / 2
+    ) * 2;
 
-    // auf Mitternacht setzen
+    // Basis auf Mitternacht setzen
     startDate.setUTCHours(0, 0, 0, 0);
 
     // nächste 2-Stunden-Marke einsetzen
     startDate.setUTCHours(nextEvenHour);
 
-    // wenn Startzeit <= jetzt → ins nächste Datum schieben
-    if (startDate <= now) {
-      startDate.setDate(startDate.getDate() + 1);
+    // ✅ sicherstellen, dass Startzeit mindestens 5 Min in der Zukunft liegt
+    const minFuture = Date.now() + 5 * 60 * 1000;
+    if (startDate.getTime() <= minFuture) {
+      startDate.setUTCHours(startDate.getUTCHours() + config.arena.intervalHours);
     }
 
     const arenaUrl = await createArena(startDate, prevUrl ?? "tba");
