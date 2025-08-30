@@ -3,19 +3,19 @@ import { URLSearchParams } from "url";
 
 export const config = {
   server: "https://lichess.org",
-  team: "testing-codes", // ✅ Team-Slug aus der URL
-  oauthToken: process.env.OAUTH_TOKEN!,
-  daysInAdvance: 1, 
-  dryRun: false,
+  team: "testing-codes",               // dein Team
+  oauthToken: process.env.OAUTH_TOKEN!,// GitHub Secret
+  daysInAdvance: 1,                    // wie viele Tage im Voraus
+  dryRun: true,                        // ⚡ TESTMODUS: nichts wird erstellt
   arena: {
     name: () => "Hourly Ultrabullet",
     description: (nextLink: string) => `Next: ${nextLink}`,
-    clockTime: 0.25, // 15 Sekunden
+    clockTime: 0.25,                   // 15 Sekunden (Ultrabullet)
     clockIncrement: 0,
-    minutes: 120, // Länge: 2 Stunden
+    minutes: 120,                      // 2 Stunden Turnierdauer
     rated: true,
     variant: "standard",
-    intervalHours: 2,
+    intervalHours: 2,                  // alle 2 Stunden
   },
 };
 
@@ -32,14 +32,15 @@ async function createArena(startDate: Date, nextLink: string) {
     teamId: config.team,
   });
 
+  console.log("Creating arena at", startDate.toISOString(), "(ms=" + startDate.getTime() + ")");
   console.log("➡️ Arena request body:", Object.fromEntries(body));
 
   if (config.dryRun) {
-    console.log("DRY RUN Arena:", Object.fromEntries(body));
-    return;
+    console.log("✅ DRY RUN Arena:", Object.fromEntries(body));
+    return "dry-run-url";
   }
 
-  const res = await fetch(`${config.server}/api/tournament`, {
+  const res = await fetch(`${config.server}/api/tournament/arena`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.oauthToken}`,
@@ -50,12 +51,12 @@ async function createArena(startDate: Date, nextLink: string) {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("❌ Arena creation failed:", err);
+    console.error("Arena creation failed:", err);
     return;
   }
 
   const url = res.headers.get("Location");
-  console.log("✅ Arena created:", url);
+  console.log("Arena created:", url);
   return url;
 }
 
@@ -70,14 +71,9 @@ async function main() {
 
   for (let i = 0; i < totalArenas; i++) {
     const startDate = new Date(now);
-    // runde auf nächste gerade Stunde
-    startDate.setUTCHours(Math.floor(now.getUTCHours() / 2) * 2, 0, 0, 0);
-    // addiere Intervalle
+    startDate.setUTCMinutes(0, 0, 0);
+    startDate.setUTCHours(Math.floor(now.getUTCHours() / config.arena.intervalHours) * config.arena.intervalHours);
     startDate.setUTCHours(startDate.getUTCHours() + (i + 1) * config.arena.intervalHours);
-    // immer +5 Minuten Puffer, damit Lichess "future" akzeptiert
-    startDate.setUTCMinutes(startDate.getUTCMinutes() + 5);
-
-    console.log("⏰ Creating arena at:", startDate.toISOString());
 
     const arenaUrl = await createArena(startDate, prevUrl ?? "tba");
     if (arenaUrl) {
