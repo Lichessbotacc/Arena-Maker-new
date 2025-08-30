@@ -1,0 +1,18 @@
+name: Test Lichess Token
+
+on:
+  workflow_dispatch:   # manuelles Starten im GitHub UI
+
+jobs:
+  test-token:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test Token mit Curl
+        run: |
+          echo "Teste Lichess Token..."
+          curl -v -H "Authorization: Bearer $OAUTH_TOKEN" \
+               -d "name=TestArena&minutes=10&clockTime=1&clockIncrement=0&rated=true&variant=standard&startDate=2025-12-01T12:00:00Z&teamId=testing-codes" \
+               https://lichess.org/api/team/testing-codes/arena/new
+        env:
+          OAUTH_TOKEN: ${{ secrets.LICHESS_TOKEN }}
