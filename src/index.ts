@@ -37,7 +37,7 @@ async function createArena(startDate: Date, nextLink: string) {
     return;
   }
 
-  const res = await fetch(`${config.server}/api/tournament/arena`, {
+  const res = await fetch(`${config.server}/api/tournament`, { ... })
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.oauthToken}`,
