@@ -7,7 +7,7 @@ export const config = {
 
   arena: {
     name: () => "Hourly Ultrabullet Arena",
-    description: (nextLink?: string) => `24/7 Ultrabullet tournaments: https://lichess.org/team/bluekinglk/tournaments
+    description: (nextLink?: string) => `24/7 Ultrabullet tournaments!
 
 Next tournament: ${nextLink ?? "coming soon"}
 
