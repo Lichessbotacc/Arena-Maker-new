@@ -1,29 +1,23 @@
-import { Config } from "./types";
+name: Create Lichess Arenas
 
-// Konfiguration für Swiss-Maker
-const config: Config = {
-  teamId: "testing-codes",   // Team-ID aus der Lichess-URL
-  schedule: {
-    timezone: "Europe/Berlin", // lokale Zeitzone
-    daily: [
-      {
-        hour: 16,   // Startzeit: 16:00 Uhr
-        minute: 0,
-      },
-    ],
-  },
-  tournament: {
-    clock: {
-      limit: 180,   // 180 Sekunden = 3 Minuten
-      increment: 0, // kein Inkrement
-    },
-    rounds: 11,          // feste Rundenzahl: 11
-    rated: true,         // gewertet
-    variant: "standard", // Normales Schach
-    name: "Daily 3+0 Swiss (11 Runden)",
-    description: "Tägliches 3+0 Standard-Schachturnier mit 11 Runden im Team Testing Codes.",
-  },
-};
+on:
+  workflow_dispatch:   # Manuell starten
+  # schedule:
+  #   - cron: "0 14 * * *"   # optional: täglich 14:00 UTC
 
-export default config;
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Run Arena Creator
+        env:
+          OAUTH_TOKEN: ${{ secrets.OAUTH_TOKEN }}
+        run: yarn ts-node src/index.ts
