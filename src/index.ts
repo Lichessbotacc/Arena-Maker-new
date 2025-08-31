@@ -1,22 +1,21 @@
-// src/index.ts
 import fetch from "node-fetch";
 import { URLSearchParams } from "url";
 
 export const config = {
   server: "https://lichess.org",
-  team: "testing-codes",              // Team-ID (genau wie im Lichess-Link)
-  oauthToken: process.env.OAUTH_TOKEN!, // muss gesetzt sein
+  team: "testing-codes",              // Team-ID aus der URL
+  oauthToken: process.env.OAUTH_TOKEN!, // dein Token (in GitHub Actions gesetzt)
   daysInAdvance: 1,                     // wie viele Tage im Voraus
-  dryRun: false,
+  dryRun: false,                        // true = nur simulieren, false = wirklich erstellen
   arena: {
     name: () => "Hourly Ultrabullet",
     description: (nextLink: string) => `Next: ${nextLink}`,
-    clockTime: 0.25,        // 15 Sekunden = 0.25 Minuten
+    clockTime: 0.25,       // Minuten pro Spieler (0.25 = 15 Sekunden)
     clockIncrement: 0,
-    minutes: 120,           // Turnierlänge: 2h
+    minutes: 120,          // Turnierdauer (2h)
     rated: true,
     variant: "standard",
-    intervalHours: 2,       // alle 2 Stunden
+    intervalHours: 2,      // alle 2 Stunden
   },
 };
 
@@ -27,19 +26,22 @@ function assertEnv() {
 }
 
 /**
- * Liefert den nächsten geraden UTC-Stunden-Slot strikt in der Zukunft:
- * ..., 20:00, 22:00, 00:00, 02:00, ...
+ * Liefert nächste gerade UTC-Stunde: 00:00, 02:00, 04:00 ...
  */
 function nextEvenUtcHour(from: Date): Date {
   const d = new Date(from);
   const h = d.getUTCHours();
-  const nextEven = Math.floor(h / 2) * 2 + 2; // immer strikt später
+  const nextEven = Math.floor(h / 2) * 2 + 2;
   d.setUTCHours(nextEven, 0, 0, 0);
   return d;
 }
 
 async function createArena(startDate: Date, nextLink: string) {
-  const startDateMs = startDate.getTime();
+  // Datum in YYYY-MM-DD
+  const dateStr = startDate.toISOString().slice(0, 10);
+
+  // Uhrzeit in HH:mm (UTC)
+  const timeStr = startDate.toISOString().slice(11, 16);
 
   const body = new URLSearchParams({
     name: config.arena.name(),
@@ -49,19 +51,17 @@ async function createArena(startDate: Date, nextLink: string) {
     minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
-    startDate: String(startDateMs), // ms seit Unix epoch
+    startDate: dateStr,
+    startTime: timeStr,
   });
 
-  console.log(
-    `Creating arena starting at: ${startDate.toISOString()} (ms=${startDateMs})`
-  );
+  console.log(`Creating arena on ${dateStr} at ${timeStr} UTC`);
 
   if (config.dryRun) {
     console.log("DRY RUN Arena:", Object.fromEntries(body));
     return "dry-run";
   }
 
-  // *** FIX: richtige URL! ***
   const res = await fetch(
     `${config.server}/api/team/${config.team}/arena/new`,
     {
@@ -95,7 +95,7 @@ async function main() {
   const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
   const totalArenas = arenasPerDay * config.daysInAdvance;
 
-  console.log(`Creating ${totalArenas} arenas`);
+  console.log(`Creating ${totalArenas} arenas for team ${config.team}`);
 
   let prevUrl: string | null = null;
 
@@ -103,10 +103,6 @@ async function main() {
     const startDate = new Date(
       firstStart.getTime() + i * config.arena.intervalHours * 60 * 60 * 1000
     );
-
-    if (startDate.getTime() <= Date.now()) {
-      startDate.setTime(startDate.getTime() + config.arena.intervalHours * 60 * 60 * 1000);
-    }
 
     const arenaUrl = await createArena(startDate, prevUrl ?? "tba");
     if (arenaUrl) prevUrl = arenaUrl;
