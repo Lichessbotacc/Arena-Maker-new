@@ -5,7 +5,7 @@ export const config = {
   server: "https://lichess.org",
   team: "aggressivebot",              // Team-ID aus der URL
   oauthToken: process.env.OAUTH_TOKEN!, // dein Token (in GitHub Actions gesetzt)
-  daysInAdvance: 0,                     // wie viele Tage im Voraus
+  daysInAdvance: 1,                     // wie viele Tage im Voraus
   dryRun: false,                        // true = nur simulieren, false = wirklich erstellen
   arena: {
     name: () => "Hourly Ultrabullet",
@@ -39,9 +39,9 @@ function nextEvenUtcHour(from: Date): Date {
 }
 
 async function createArena(startDate: Date, nextLink: string) {
-   // Start date in YYYY-MM-DD (add 2 days to make it future)
+   // Start date in YYYY-MM-DD (add 0 days to make it today)
    const date = new Date(startDate);
-   date.setDate(date.getDate() + 2);
+   date.setDate(date.getDate() + 0);
    const dateStr = date.toISOString().slice(0, 10);
    const timeStr = date.toISOString().slice(11, 16);
 
