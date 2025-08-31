@@ -22,7 +22,7 @@ function nextEvenUtcHour(from: Date): Date {
 }
 
 /**
- * Create Arena Tournament (Public tournament, not team-specific)
+ * Create Team Battle Arena Tournament
  */
 async function createArena(startDate: Date, nextLink: string) {
   const date = new Date(startDate);
@@ -36,9 +36,10 @@ async function createArena(startDate: Date, nextLink: string) {
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
     startDate: date.toISOString(),
+    teamBattleByTeam: config.team, // This creates a team battle arena
   });
 
-  console.log(`Creating public arena tournament on ${date.toISOString()} UTC`);
+  console.log(`Creating team battle arena tournament on ${date.toISOString()} UTC for team ${config.team}`);
 
   if (config.dryRun) {
     console.log("DRY RUN Arena:", Object.fromEntries(body));
@@ -70,7 +71,7 @@ async function createArena(startDate: Date, nextLink: string) {
   const data = await res.json();
   console.log("Response body:", data);
   const url = data.id ? `${config.server}/tournament/${data.id}` : res.headers.get("Location");
-  console.log("Arena created:", url);
+  console.log("Team battle arena created:", url);
   return url;
 }
 
@@ -181,8 +182,8 @@ async function main() {
   totalTournaments = tournamentsPerDay * config.daysInAdvance;
 
   console.log(`\nCreating ${totalTournaments} tournaments:`);
-  if (config.createArenas) console.log(`- Arena tournaments enabled (public)`);
-  if (config.createSwiss) console.log(`- Swiss tournaments enabled for team ${config.team}`);
+  if (config.createArenas) console.log(`- Team battle arena tournaments enabled (Ultrabullet 15+0)`);
+  if (config.createSwiss) console.log(`- Swiss tournaments enabled for team ${config.team} (Blitz 3+0)`);
   console.log(`- Starting from: ${firstStart.toISOString()}`);
   console.log(`- Days in advance: ${config.daysInAdvance}`);
   console.log("");
@@ -242,7 +243,7 @@ async function main() {
   }
 
   console.log("\n=== Tournament creation completed ===");
-  if (prevArenaUrl) console.log(`Last arena created: ${prevArenaUrl}`);
+  if (prevArenaUrl) console.log(`Last team battle arena created: ${prevArenaUrl}`);
   if (prevSwissUrl) console.log(`Last Swiss created: ${prevSwissUrl}`);
 }
 
