@@ -20,6 +20,8 @@ export const config = {
 };
 
 function assertEnv() {
+  console.log("Debug: OAUTH_TOKEN is set:", !!process.env.OAUTH_TOKEN);
+  console.log("Debug: OAUTH_TOKEN length:", process.env.OAUTH_TOKEN ? process.env.OAUTH_TOKEN.length : 0);
   if (!config.oauthToken) {
     throw new Error("OAUTH_TOKEN fehlt. Setze die Umgebungsvariable OAUTH_TOKEN.");
   }
