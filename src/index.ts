@@ -39,13 +39,15 @@ async function createTeamArena(startDate: Date, nextLink: string) {
       name: "Team Conditions",
       body: new URLSearchParams({
         name: config.arena.name(), // "Hourly Ultrabullet" - Lichess adds "Arena" automatically
-        description: `Must be in team darkonteams
+        description: `THE HOURLY ULTRABULLET TOURNAMENTS ARE BACK!!!
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
 
 Next tournament: ${nextTournamentLink}
 
-Join our team: https://lichess.org/team/darkonteams
+My Birthday MONEY swiss: https://lichess.org/swiss/hzoaP32T
+Our Discord Group: https://discord.gg/cNS3u7Gnbn
+Our Whatsapp Group: https://chat.whatsapp.com/CLdKn9VzUrL0VN2vrcOJDT?mode=ac_t
 
 Have fun!`,
         clockTime: String(config.arena.clockTime),
