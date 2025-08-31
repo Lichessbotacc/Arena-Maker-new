@@ -1,6 +1,6 @@
 export const config = {
   server: "https://lichess.org",
-  team: "aggressivebot", // Your team ID - tournaments will be created by this team
+  team: "bluekinglk", // Your team ID - tournaments will be created by this team
   oauthToken: process.env.OAUTH_TOKEN!, // OAuth token from environment variables
   daysInAdvance: 1, // How many days in advance to create tournaments
   dryRun: false, // true = simulate only, false = actually create
