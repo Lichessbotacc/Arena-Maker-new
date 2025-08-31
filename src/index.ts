@@ -55,6 +55,7 @@ async function createArena(startDate: Date, nextLink: string) {
     variant: config.arena.variant,
     startDate: dateStr,
     startTime: timeStr,
+    teamId: config.team,
   });
 
   console.log(`Creating arena on ${dateStr} at ${timeStr} UTC`);
@@ -64,11 +65,11 @@ async function createArena(startDate: Date, nextLink: string) {
     return "dry-run";
   }
 
-  console.log("Making API request to:", `${config.server}/api/team/${config.team}/arena/new`);
+  console.log("Making API request to:", `${config.server}/api/tournament`);
   console.log("Request body:", Object.fromEntries(body));
 
   const res = await fetch(
-    `${config.server}/api/team/${config.team}/arena/new`,
+    `${config.server}/api/tournament`,
     {
       method: "POST",
       headers: {
