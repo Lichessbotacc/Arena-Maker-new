@@ -39,17 +39,19 @@ function nextEvenUtcHour(from: Date): Date {
 }
 
 async function createArena(startDate: Date, nextLink: string) {
-  // Datum in YYYY-MM-DD
-  const dateStr = startDate.toISOString().slice(0, 10);
+   // Datum in YYYY-MM-DD (add 1 day to make it future)
+   const date = new Date(startDate);
+   date.setDate(date.getDate() + 1);
+   const dateStr = date.toISOString().slice(0, 10);
 
-  // Uhrzeit in HH:mm (UTC)
-  const timeStr = startDate.toISOString().slice(11, 16);
+   // Uhrzeit in HH:mm (UTC)
+   const timeStr = startDate.toISOString().slice(11, 16);
 
   const body = new URLSearchParams({
     name: config.arena.name(),
     description: config.arena.description(nextLink),
-    "clock.limit": String(Math.round(config.arena.clockTime * 60)), // in Sekunden
-    "clock.increment": String(config.arena.clockIncrement),
+    clockTime: String(config.arena.clockTime), // in Minuten
+    clockIncrement: String(config.arena.clockIncrement),
     minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
