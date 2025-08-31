@@ -1,23 +1,31 @@
-name: Test Swiss Tournament
+name: Test Tournament Creation
 
 on:
-  workflow_dispatch:   # erlaubt manuelles Starten im Actions-Tab
+  workflow_dispatch:   # Manual trigger only for testing
 
 jobs:
-  swiss:
+  test-tournaments:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
-      - name: Run Swiss Maker
-        run: OAUTH_TOKEN=${{ secrets.OAUTH_TOKEN }} yarn ts-node src/index.ts
+      - name: Test Tournament Creation
+        env:
+          OAUTH_TOKEN: ${{ secrets.OAUTH_TOKEN }}
+        run: yarn ts-node src/index.ts
+
+      - name: Display test results
+        run: |
+          echo "Test tournament creation completed"
+          echo "Check the logs above for any errors or successful tournament URLs"
