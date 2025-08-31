@@ -5,7 +5,7 @@ export const config = {
   server: "https://lichess.org",
   team: "aggressivebot",              // Team-ID aus der URL
   oauthToken: process.env.OAUTH_TOKEN!, // dein Token (in GitHub Actions gesetzt)
-  daysInAdvance: 1,                     // wie viele Tage im Voraus
+  daysInAdvance: 0,                     // wie viele Tage im Voraus
   dryRun: false,                        // true = nur simulieren, false = wirklich erstellen
   arena: {
     name: () => "Hourly Ultrabullet",
