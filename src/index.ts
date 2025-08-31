@@ -88,7 +88,9 @@ async function createArena(startDate: Date, nextLink: string) {
     return null;
   }
 
-  const url = res.headers.get("Location");
+  const data = await res.json();
+  console.log("Response body:", data);
+  const url = data.id ? `${config.server}/tournament/${data.id}` : res.headers.get("Location");
   console.log("Arena created:", url);
   return url;
 }
