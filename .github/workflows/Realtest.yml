@@ -22,4 +22,6 @@ jobs:
         run: yarn install
 
       - name: Run Arena Maker
-        run: OAUTH_TOKEN=${{ secrets.OAUTH_TOKEN }} npx ts-node src/index.ts
+        env:
+          OAUTH_TOKEN: ${{ secrets.OAUTH_TOKEN }}
+        run: npx ts-node src/index.ts
