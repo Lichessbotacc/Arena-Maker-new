@@ -110,7 +110,7 @@ async function main() {
 
   for (let i = 0; i < totalArenas; i++) {
     // Add delay to avoid rate limiting
-    if (i > 0) await new Promise(resolve => setTimeout(resolve, 2000));
+    if (i > 0) await new Promise(resolve => setTimeout(resolve, 10000));
 
     const startDate = new Date(
       firstStart.getTime() + i * config.arena.intervalHours * 60 * 60 * 1000
