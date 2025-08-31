@@ -66,18 +66,18 @@ async function createArena(startDate: Date, nextLink: string) {
     startDate: date.toISOString(),
   });
 
-  console.log(`Creating arena tournament on ${date.toISOString()} UTC`);
+  console.log(`Creating team arena tournament on ${date.toISOString()} UTC for team ${config.team}`);
 
   if (config.dryRun) {
-    console.log("DRY RUN Arena:", Object.fromEntries(body));
+    console.log("DRY RUN Team Arena:", Object.fromEntries(body));
     return "dry-run";
   }
 
-  console.log("Making API request to:", `${config.server}/api/tournament`);
+  console.log("Making API request to:", `${config.server}/api/tournament/team/${config.team}`);
   console.log("Request body:", Object.fromEntries(body));
 
   const res = await fetch(
-    `${config.server}/api/tournament`,
+    `${config.server}/api/tournament/team/${config.team}`,
     {
       method: "POST",
       headers: {
