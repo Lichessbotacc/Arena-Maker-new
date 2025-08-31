@@ -64,6 +64,9 @@ async function createArena(startDate: Date, nextLink: string) {
     return "dry-run";
   }
 
+  console.log("Making API request to:", `${config.server}/api/team/${config.team}/arena/new`);
+  console.log("Request body:", Object.fromEntries(body));
+
   const res = await fetch(
     `${config.server}/api/team/${config.team}/arena/new`,
     {
@@ -76,6 +79,9 @@ async function createArena(startDate: Date, nextLink: string) {
       body,
     }
   );
+
+  console.log("Response status:", res.status);
+  console.log("Response headers:", Object.fromEntries(res.headers.entries()));
 
   if (!res.ok) {
     const errText = await res.text();
