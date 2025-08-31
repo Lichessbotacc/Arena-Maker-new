@@ -39,10 +39,11 @@ function nextEvenUtcHour(from: Date): Date {
 }
 
 async function createArena(startDate: Date, nextLink: string) {
-   // Start timestamp in Unix seconds (add 1 day to make it future)
+   // Start date in YYYY-MM-DD (add 2 days to make it future)
    const date = new Date(startDate);
-   date.setDate(date.getDate() + 1);
-   const startTimestamp = Math.floor(date.getTime() / 1000);
+   date.setDate(date.getDate() + 2);
+   const dateStr = date.toISOString().slice(0, 10);
+   const timeStr = date.toISOString().slice(11, 16);
 
   const body = new URLSearchParams({
     name: config.arena.name(),
@@ -52,8 +53,6 @@ async function createArena(startDate: Date, nextLink: string) {
     minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
-    startDate: String(startTimestamp),
-    startTime: date.toISOString().slice(11, 16),
     teamId: config.team,
   });
 
