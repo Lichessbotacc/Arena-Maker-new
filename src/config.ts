@@ -1,6 +1,6 @@
 export const config = {
   server: "https://lichess.org",
-  team: "AggressiveBot", // <- Dein Team auf Lichess
+  team: "aggressivebot", // <- Dein Team auf Lichess
   oauthToken: process.env.OAUTH_TOKEN!, // kommt aus GitHub Secrets oder .env
   daysInAdvance: 1, // wie viele Tage im Voraus Arenen erstellt werden
   dryRun: false, // true = nur anzeigen, false = wirklich erstellen
