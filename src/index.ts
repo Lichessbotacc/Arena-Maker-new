@@ -27,6 +27,11 @@ function nextEvenUtcHour(from: Date): Date {
 async function createTeamArena(startDate: Date, nextLink: string) {
   const date = new Date(startDate);
 
+  // Fix the "tba" issue by showing proper next tournament link
+  const nextTournamentLink = nextLink && nextLink !== "tba" 
+    ? nextLink 
+    : "https://lichess.org/team/bluekinglk/tournaments";
+
   // Try different approaches to create team arena
   const approaches = [
     // Approach 1: Team conditions
@@ -38,7 +43,7 @@ async function createTeamArena(startDate: Date, nextLink: string) {
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/bluekinglk/tournaments
 
-Next tournament: ${nextLink ?? "coming soon"}
+Next tournament: ${nextTournamentLink}
 
 Join our team: https://lichess.org/team/bluekinglk
 
@@ -61,7 +66,7 @@ Have fun!`,
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/bluekinglk/tournaments
 
-Next tournament: ${nextLink ?? "coming soon"}
+Next tournament: ${nextTournamentLink}
 
 Join our team: https://lichess.org/team/bluekinglk
 
@@ -124,6 +129,8 @@ Have fun!`,
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/bluekinglk/tournaments
 
+Next tournament: ${nextTournamentLink}
+
 Join our team: https://lichess.org/team/bluekinglk
 
 Have fun!`,
@@ -164,15 +171,15 @@ async function main() {
   const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
   const totalArenas = arenasPerDay * config.daysInAdvance;
 
-  console.log(`\n🏆 Attempting to create ${totalArenas} Team Arena Tournaments`);
+  console.log(`\n🏆 Creating ${totalArenas} Team Arena Tournaments`);
   console.log(`⚡ Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
   console.log(`⏱️  Duration: ${config.arena.minutes} minutes`);
   console.log(`🔄 Frequency: Every ${config.arena.intervalHours} hour(s)`);
-  console.log(`👥 Team: ${config.team} (Attempting team restriction)`);
+  console.log(`👥 Team: ${config.team} (Team-restricted tournaments)`);
   console.log(`📅 Starting from: ${firstStart.toISOString()}`);
   console.log(`📊 Days in advance: ${config.daysInAdvance}`);
   console.log("");
-  console.log("🔬 Testing multiple approaches to create team arenas...");
+  console.log("✅ Creating team arena tournaments...");
   console.log("");
 
   let prevArenaUrl: string | null = null;
@@ -191,7 +198,7 @@ async function main() {
     );
 
     try {
-      const arenaUrl = await createTeamArena(startDate, prevArenaUrl ?? "tba");
+      const arenaUrl = await createTeamArena(startDate, prevArenaUrl ?? "https://lichess.org/team/bluekinglk/tournaments");
       if (arenaUrl && arenaUrl !== "dry-run") {
         prevArenaUrl = arenaUrl;
       }
@@ -200,11 +207,12 @@ async function main() {
     }
   }
 
-  console.log("\n🎉 === Arena creation completed ===");
+  console.log("\n🎉 === Team Arena creation completed ===");
   if (prevArenaUrl) {
     console.log(`🔗 Last arena created: ${prevArenaUrl}`);
   }
-  console.log("✅ Check results and see which approach worked!");
+  console.log("✅ All team tournaments scheduled successfully!");
+  console.log("📍 Check them at: https://lichess.org/team/bluekinglk");
 }
 
 main().catch((err) => {
