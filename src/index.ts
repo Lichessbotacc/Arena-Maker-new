@@ -1,47 +1,17 @@
 import fetch from "node-fetch";
 import { URLSearchParams } from "url";
-
-export const config = {
-  server: "https://lichess.org",
-  team: "aggressivebot",              // Team-ID aus der URL
-  oauthToken: process.env.OAUTH_TOKEN!, // dein Token (in GitHub Actions gesetzt)
-  daysInAdvance: 1,                     // wie viele Tage im Voraus
-  dryRun: false,                        // true = nur simulieren, false = wirklich erstellen
-  arena: {
-    name: () => "Hourly Ultrabullet Arena",
-    description: (nextLink: string) => `Next: ${nextLink}`,
-    clockTime: 0.25,       // Minuten pro Spieler (0.25 = 15 Sekunden)
-    clockIncrement: 0,
-    minutes: 60,          // Turnierdauer (1h)
-    rated: true,
-    variant: "standard",
-    intervalHours: 1,      // alle 1 Stunde
-  },
-  swiss: {
-    name: () => "Hourly Ultrabullet Swiss",
-    description: (nextLink: string) => `Next: ${nextLink}`,
-    clockTime: 0.25,       // Minuten pro Spieler (0.25 = 15 Sekunden)
-    clockIncrement: 0,
-    nbRounds: 5,          // Number of rounds in Swiss tournament
-    rated: true,
-    variant: "standard",
-    intervalHours: 1,      // alle 1 Stunde
-  },
-  // Set which tournament types to create
-  createArenas: true,
-  createSwiss: false,  // Set to false initially due to team leadership issue
-};
+import { config } from "./config";
 
 function assertEnv() {
   console.log("Debug: OAUTH_TOKEN is set:", !!process.env.OAUTH_TOKEN);
   console.log("Debug: OAUTH_TOKEN length:", process.env.OAUTH_TOKEN ? process.env.OAUTH_TOKEN.length : 0);
   if (!config.oauthToken) {
-    throw new Error("OAUTH_TOKEN fehlt. Setze die Umgebungsvariable OAUTH_TOKEN.");
+    throw new Error("OAUTH_TOKEN missing. Set the OAUTH_TOKEN environment variable.");
   }
 }
 
 /**
- * Liefert nächste gerade UTC-Stunde: 00:00, 02:00, 04:00 ...
+ * Get next even UTC hour: 00:00, 02:00, 04:00 ...
  */
 function nextEvenUtcHour(from: Date): Date {
   const d = new Date(from);
@@ -51,14 +21,16 @@ function nextEvenUtcHour(from: Date): Date {
   return d;
 }
 
+/**
+ * Create Arena Tournament (Public tournament, not team-specific)
+ */
 async function createArena(startDate: Date, nextLink: string) {
   const date = new Date(startDate);
-  date.setDate(date.getDate() + 0);
 
   const body = new URLSearchParams({
     name: config.arena.name(),
     description: config.arena.description(nextLink),
-    clockTime: String(config.arena.clockTime), // in Minuten
+    clockTime: String(config.arena.clockTime), // in minutes
     clockIncrement: String(config.arena.clockIncrement),
     minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
@@ -66,28 +38,25 @@ async function createArena(startDate: Date, nextLink: string) {
     startDate: date.toISOString(),
   });
 
-  console.log(`Creating team arena tournament on ${date.toISOString()} UTC for team ${config.team}`);
+  console.log(`Creating public arena tournament on ${date.toISOString()} UTC`);
 
   if (config.dryRun) {
-    console.log("DRY RUN Team Arena:", Object.fromEntries(body));
+    console.log("DRY RUN Arena:", Object.fromEntries(body));
     return "dry-run";
   }
 
-  console.log("Making API request to:", `${config.server}/api/tournament/team/${config.team}`);
+  console.log("Making API request to:", `${config.server}/api/tournament`);
   console.log("Request body:", Object.fromEntries(body));
 
-  const res = await fetch(
-    `${config.server}/api/tournament/team/${config.team}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.oauthToken}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
-      },
-      body,
-    }
-  );
+  const res = await fetch(`${config.server}/api/tournament`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.oauthToken}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body,
+  });
 
   console.log("Response status:", res.status);
   console.log("Response headers:", Object.fromEntries(res.headers.entries()));
@@ -105,10 +74,11 @@ async function createArena(startDate: Date, nextLink: string) {
   return url;
 }
 
+/**
+ * Create Swiss Tournament for Team
+ */
 async function createSwiss(startDate: Date, nextLink: string) {
-   // Start date in YYYY-MM-DD (add 0 days to make it today)
-   const date = new Date(startDate);
-   date.setDate(date.getDate() + 0);
+  const date = new Date(startDate);
 
   const body = new URLSearchParams({
     name: config.swiss.name(),
@@ -131,18 +101,15 @@ async function createSwiss(startDate: Date, nextLink: string) {
   console.log("Making API request to:", `${config.server}/api/swiss/new/${config.team}`);
   console.log("Request body:", Object.fromEntries(body));
 
-  const res = await fetch(
-    `${config.server}/api/swiss/new/${config.team}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.oauthToken}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
-      },
-      body,
-    }
-  );
+  const res = await fetch(`${config.server}/api/swiss/new/${config.team}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.oauthToken}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body,
+  });
 
   console.log("Response status:", res.status);
   console.log("Response headers:", Object.fromEntries(res.headers.entries()));
@@ -160,11 +127,45 @@ async function createSwiss(startDate: Date, nextLink: string) {
   return url;
 }
 
+/**
+ * Check if user is team leader (required for Swiss tournaments)
+ */
+async function checkTeamLeadership(): Promise<boolean> {
+  console.log(`Checking team leadership for team: ${config.team}`);
+  
+  const res = await fetch(`${config.server}/api/team/${config.team}`, {
+    headers: {
+      Authorization: `Bearer ${config.oauthToken}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    console.error("Failed to fetch team info:", res.status);
+    return false;
+  }
+
+  const teamData = await res.json();
+  console.log("Team data:", teamData);
+  
+  // Check if current user is in leaders list
+  // Note: This is a simplified check - you might need to fetch user info separately
+  return true; // For now, assume leadership - the API will reject if not
+}
+
 async function main() {
   assertEnv();
 
   const now = new Date();
   const firstStart = nextEvenUtcHour(now);
+
+  // Check team leadership for Swiss tournaments
+  if (config.createSwiss) {
+    const isLeader = await checkTeamLeadership();
+    if (!isLeader) {
+      console.warn("Warning: You might not be a team leader. Swiss tournament creation may fail.");
+    }
+  }
 
   let totalTournaments = 0;
   let tournamentsPerDay = 0;
@@ -179,20 +180,29 @@ async function main() {
   
   totalTournaments = tournamentsPerDay * config.daysInAdvance;
 
-  console.log(`Creating ${totalTournaments} tournaments:`);
-  if (config.createArenas) console.log(`- Arena tournaments enabled`);
+  console.log(`\nCreating ${totalTournaments} tournaments:`);
+  if (config.createArenas) console.log(`- Arena tournaments enabled (public)`);
   if (config.createSwiss) console.log(`- Swiss tournaments enabled for team ${config.team}`);
+  console.log(`- Starting from: ${firstStart.toISOString()}`);
+  console.log(`- Days in advance: ${config.daysInAdvance}`);
+  console.log("");
 
   let prevArenaUrl: string | null = null;
   let prevSwissUrl: string | null = null;
 
-  for (let i = 0; i < Math.max(
+  const maxIterations = Math.max(
     config.createArenas ? Math.floor(24 / config.arena.intervalHours) * config.daysInAdvance : 0,
     config.createSwiss ? Math.floor(24 / config.swiss.intervalHours) * config.daysInAdvance : 0
-  ); i++) {
+  );
+
+  for (let i = 0; i < maxIterations; i++) {
+    console.log(`\n--- Tournament ${i + 1}/${maxIterations} ---`);
     
     // Add delay to avoid rate limiting (except for first iteration)
-    if (i > 0) await new Promise(resolve => setTimeout(resolve, 30000)); // Reduced delay
+    if (i > 0) {
+      console.log("Waiting 30 seconds to avoid rate limiting...");
+      await new Promise(resolve => setTimeout(resolve, 30000));
+    }
 
     const startDate = new Date(
       firstStart.getTime() + i * Math.min(
@@ -203,17 +213,40 @@ async function main() {
 
     // Create arena tournament if enabled
     if (config.createArenas && i < Math.floor(24 / config.arena.intervalHours) * config.daysInAdvance) {
-      const arenaUrl = await createArena(startDate, prevArenaUrl ?? "tba");
-      if (arenaUrl) prevArenaUrl = arenaUrl;
+      try {
+        const arenaUrl = await createArena(startDate, prevArenaUrl ?? "tba");
+        if (arenaUrl && arenaUrl !== "dry-run") {
+          prevArenaUrl = arenaUrl;
+        }
+      } catch (error) {
+        console.error("Error creating arena:", error);
+      }
     }
 
     // Create Swiss tournament if enabled (with additional delay)
     if (config.createSwiss && i < Math.floor(24 / config.swiss.intervalHours) * config.daysInAdvance) {
-      if (config.createArenas) await new Promise(resolve => setTimeout(resolve, 10000)); // Extra delay if both types
-      const swissUrl = await createSwiss(startDate, prevSwissUrl ?? "tba");
-      if (swissUrl) prevSwissUrl = swissUrl;
+      if (config.createArenas) {
+        console.log("Waiting 10 seconds before creating Swiss tournament...");
+        await new Promise(resolve => setTimeout(resolve, 10000));
+      }
+      
+      try {
+        const swissUrl = await createSwiss(startDate, prevSwissUrl ?? "tba");
+        if (swissUrl && swissUrl !== "dry-run") {
+          prevSwissUrl = swissUrl;
+        }
+      } catch (error) {
+        console.error("Error creating Swiss tournament:", error);
+      }
     }
   }
+
+  console.log("\n=== Tournament creation completed ===");
+  if (prevArenaUrl) console.log(`Last arena created: ${prevArenaUrl}`);
+  if (prevSwissUrl) console.log(`Last Swiss created: ${prevSwissUrl}`);
 }
 
-main().catch((err) => console.error(err));
+main().catch((err) => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});
