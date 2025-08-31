@@ -12,7 +12,7 @@ export const config = {
     name: () => "Hourly Ultrabullet",
     description: (nextLink: string) => `Next: ${nextLink}`,
     clockTime: 0.25,        // 15 Sekunden = 0.25 Minuten
-    clockIncrement: 0,
+    clockIncrement: 0,      // Sekunden
     minutes: 120,           // Turnierlänge: 2h
     rated: true,
     variant: "standard",
@@ -32,31 +32,27 @@ function assertEnv() {
  */
 function nextEvenUtcHour(from: Date): Date {
   const d = new Date(from);
-  // nächstes gerades Stundengitter > jetzt
   const h = d.getUTCHours();
   const nextEven = Math.floor(h / 2) * 2 + 2; // immer strikt später
-  d.setUTCHours(nextEven, 0, 0, 0);           // JS rollt den Tag automatisch weiter
+  d.setUTCHours(nextEven, 0, 0, 0);
   return d;
 }
 
 async function createArena(startDate: Date, nextLink: string) {
-  // *** WICHTIG: Millisekunden! Nicht durch 1000 teilen. ***
-  const startDateMs = startDate.getTime();
-
   const body = new URLSearchParams({
     name: config.arena.name(),
     description: config.arena.description(nextLink),
-    clockTime: String(config.arena.clockTime),
-    clockIncrement: String(config.arena.clockIncrement),
+    "clock.limit": String(Math.round(config.arena.clockTime * 60)), // Sekunden!
+    "clock.increment": String(config.arena.clockIncrement),
     minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
-    startDate: String(startDateMs),   // <-- ms
+    startDate: startDate.toISOString(),   // ISO String statt ms
     teamId: config.team,
   });
 
   console.log(
-    `Creating arena starting at: ${startDate.toISOString()} (ms=${startDateMs})`
+    `Creating arena starting at: ${startDate.toISOString()}`
   );
 
   if (config.dryRun) {
@@ -89,9 +85,9 @@ async function main() {
   assertEnv();
 
   const now = new Date();
-  const firstStart = nextEvenUtcHour(now); // z.B. jetzt 21:50Z -> 22:00Z
+  const firstStart = nextEvenUtcHour(now);
 
-  const arenasPerDay = Math.floor(24 / config.arena.intervalHours); // 12
+  const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
   const totalArenas = arenasPerDay * config.daysInAdvance;
 
   console.log(`Creating ${totalArenas} arenas`);
@@ -103,8 +99,6 @@ async function main() {
       firstStart.getTime() + i * config.arena.intervalHours * 60 * 60 * 1000
     );
 
-    // falls aus irgendeinem Grund der Slot nicht in der Zukunft liegt (z.B. Clock drift),
-    // einfach zum nächsten 2h-Slot springen
     if (startDate.getTime() <= Date.now()) {
       startDate.setTime(startDate.getTime() + config.arena.intervalHours * 60 * 60 * 1000);
     }
