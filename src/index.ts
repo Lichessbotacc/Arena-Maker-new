@@ -4,7 +4,7 @@ import { URLSearchParams } from "url";
 
 export const config = {
   server: "https://lichess.org",
-  team: "testing-codes",
+  team: "testing-codes",              // Team-ID (genau wie im Lichess-Link)
   oauthToken: process.env.OAUTH_TOKEN!, // muss gesetzt sein
   daysInAdvance: 1,                     // wie viele Tage im Voraus
   dryRun: false,
@@ -12,7 +12,7 @@ export const config = {
     name: () => "Hourly Ultrabullet",
     description: (nextLink: string) => `Next: ${nextLink}`,
     clockTime: 0.25,        // 15 Sekunden = 0.25 Minuten
-    clockIncrement: 0,      // Sekunden
+    clockIncrement: 0,
     minutes: 120,           // Turnierlänge: 2h
     rated: true,
     variant: "standard",
@@ -39,20 +39,21 @@ function nextEvenUtcHour(from: Date): Date {
 }
 
 async function createArena(startDate: Date, nextLink: string) {
+  const startDateMs = startDate.getTime();
+
   const body = new URLSearchParams({
     name: config.arena.name(),
     description: config.arena.description(nextLink),
-    "clock.limit": String(Math.round(config.arena.clockTime * 60)), // Sekunden!
+    "clock.limit": String(Math.round(config.arena.clockTime * 60)), // in Sekunden
     "clock.increment": String(config.arena.clockIncrement),
     minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
-    startDate: startDate.toISOString(),   // ISO String statt ms
-    teamId: config.team,
+    startDate: String(startDateMs), // ms seit Unix epoch
   });
 
   console.log(
-    `Creating arena starting at: ${startDate.toISOString()}`
+    `Creating arena starting at: ${startDate.toISOString()} (ms=${startDateMs})`
   );
 
   if (config.dryRun) {
@@ -60,15 +61,19 @@ async function createArena(startDate: Date, nextLink: string) {
     return "dry-run";
   }
 
-  const res = await fetch(`${config.server}/api/tournament/arena`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.oauthToken}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-    },
-    body,
-  });
+  // *** FIX: richtige URL! ***
+  const res = await fetch(
+    `${config.server}/api/team/${config.team}/arena/new`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.oauthToken}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+      body,
+    }
+  );
 
   if (!res.ok) {
     const errText = await res.text();
