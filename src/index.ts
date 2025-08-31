@@ -12,7 +12,7 @@ export const config = {
     description: (nextLink: string) => `Next: ${nextLink}`,
     clockTime: 0.25,       // Minuten pro Spieler (0.25 = 15 Sekunden)
     clockIncrement: 0,
-    minutes: 120,          // Turnierdauer (2h)
+    minutes: 60,          // Turnierdauer (1h)
     rated: true,
     variant: "standard",
     intervalHours: 2,      // alle 2 Stunden
