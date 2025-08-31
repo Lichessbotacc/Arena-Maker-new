@@ -7,13 +7,7 @@ export const config = {
 
   arena: {
     name: () => "Hourly Ultrabullet Arena",
-    description: (nextLink?: string) => `24/7 Ultrabullet tournaments!
-
-Next tournament: ${nextLink ?? "coming soon"}
-
-Join our team: https://lichess.org/team/bluekinglk
-
-Have fun!`,
+    description: (nextLink?: string) => `Hourly Ultrabullet tournaments by BlueKingLK team!`,
     
     // Tournament settings - ULTRABULLET (15+0)
     clockTime: 0.25,        // Minutes -> 0.25 = 15 seconds
