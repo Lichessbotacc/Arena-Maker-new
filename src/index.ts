@@ -38,7 +38,7 @@ async function createTeamArena(startDate: Date, nextLink: string) {
     {
       name: "Team Conditions",
       body: new URLSearchParams({
-        name: config.arena.name(), // "Hourly Ultrabullet" - Lichess adds "Arena" automatically
+        name: config.arena.name(),
         description: `THE HOURLY ULTRABULLET TOURNAMENTS ARE BACK!!!
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
@@ -63,7 +63,7 @@ Have fun!`,
     {
       name: "Team Battle",
       body: new URLSearchParams({
-        name: config.arena.name(), // "Hourly Ultrabullet" - Lichess adds "Arena" automatically
+        name: config.arena.name(),
         description: `Must be in team darkonteams
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
@@ -114,19 +114,25 @@ Have fun!`,
       const data = await res.json();
       console.log("Response body:", data);
       const url = data.id ? `${config.server}/tournament/${data.id}` : res.headers.get("Location");
-      console.log(`✅ Arena created with ${approach.name}:`, url);
+      console.log(`Arena created with ${approach.name}:`, url);
       return url;
     } else {
       const errText = await res.text();
-      console.error(`❌ ${approach.name} failed:`, res.status, errText);
+      console.error(`${approach.name} failed:`, res.status, errText);
+      
+      // If rate limited, wait longer before trying next approach
+      if (res.status === 429) {
+        console.log("Rate limited - waiting 3 minutes before next approach...");
+        await new Promise(resolve => setTimeout(resolve, 180000)); // 3 minutes
+      }
     }
   }
 
-  console.error("❌ All approaches failed - creating public arena as fallback");
+  console.error("All approaches failed - creating public arena as fallback");
   
   // Fallback: Create public arena
   const fallbackBody = new URLSearchParams({
-    name: config.arena.name(), // "Hourly Ultrabullet" - Lichess adds "Arena" automatically
+    name: config.arena.name(),
     description: `Hosted by darkonteams team
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
@@ -157,7 +163,7 @@ Have fun!`,
   if (fallbackRes.ok) {
     const data = await fallbackRes.json();
     const url = data.id ? `${config.server}/tournament/${data.id}` : fallbackRes.headers.get("Location");
-    console.log("✅ Public arena created as fallback:", url);
+    console.log("Public arena created as fallback:", url);
     return url;
   }
 
@@ -173,15 +179,16 @@ async function main() {
   const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
   const totalArenas = arenasPerDay * config.daysInAdvance;
 
-  console.log(`\n🏆 Creating ${totalArenas} Team Ultrabullet Tournaments`);
-  console.log(`⚡ Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
-  console.log(`⏱️  Duration: ${config.arena.minutes} minutes`);
-  console.log(`🔄 Frequency: Every ${config.arena.intervalHours} hour(s)`);
-  console.log(`👥 Team: ${config.team} (DarkOnTeams)`);
-  console.log(`📅 Starting from: ${firstStart.toISOString()}`);
-  console.log(`📊 Days in advance: ${config.daysInAdvance}`);
+  console.log(`\nCreating ${totalArenas} Team Ultrabullet Tournaments`);
+  console.log(`Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
+  console.log(`Duration: ${config.arena.minutes} minutes`);
+  console.log(`Frequency: Every ${config.arena.intervalHours} hour(s)`);
+  console.log(`Team: ${config.team} (DarkOnTeams)`);
+  console.log(`Starting from: ${firstStart.toISOString()}`);
+  console.log(`Days in advance: ${config.daysInAdvance}`);
   console.log("");
-  console.log("✅ Creating team tournaments for DarkOnTeams...");
+  console.log("Creating team tournaments for DarkOnTeams...");
+  console.log("Using longer delays to avoid rate limiting");
   console.log("");
 
   let prevArenaUrl: string | null = null;
@@ -189,10 +196,10 @@ async function main() {
   for (let i = 0; i < totalArenas; i++) {
     console.log(`\n--- Tournament ${i + 1}/${totalArenas} ---`);
     
-    // Add delay to avoid rate limiting (except for first iteration)
+    // INCREASED delay to avoid rate limiting (except for first iteration)
     if (i > 0) {
-      console.log("⏳ Waiting 30 seconds to avoid rate limiting...");
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      console.log("Waiting 5 minutes to avoid rate limiting...");
+      await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minutes between tournaments
     }
 
     const startDate = new Date(
@@ -205,19 +212,19 @@ async function main() {
         prevArenaUrl = arenaUrl;
       }
     } catch (error) {
-      console.error("❌ Error creating tournament:", error);
+      console.error("Error creating tournament:", error);
     }
   }
 
-  console.log("\n🎉 === DarkOnTeams Tournament creation completed ===");
+  console.log("\n=== DarkOnTeams Tournament creation completed ===");
   if (prevArenaUrl) {
-    console.log(`🔗 Last tournament created: ${prevArenaUrl}`);
+    console.log(`Last tournament created: ${prevArenaUrl}`);
   }
-  console.log("✅ All team tournaments scheduled successfully!");
-  console.log("📍 Check them at: https://lichess.org/team/darkonteams");
+  console.log("All team tournaments scheduled successfully!");
+  console.log("Check them at: https://lichess.org/team/darkonteams");
 }
 
 main().catch((err) => {
-  console.error("💥 Fatal error:", err);
+  console.error("Fatal error:", err);
   process.exit(1);
 });
