@@ -15,7 +15,7 @@ export const config = {
     minutes: 60,          // Turnierdauer (1h)
     rated: true,
     variant: "standard",
-    intervalHours: 2,      // alle 2 Stunden
+    intervalHours: 1,      // alle 1 Stunde
   },
 };
 
@@ -53,6 +53,7 @@ async function createArena(startDate: Date, nextLink: string) {
     minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
+    startDate: date.toISOString(),
     teamId: config.team,
   });
 
@@ -110,7 +111,7 @@ async function main() {
 
   for (let i = 0; i < totalArenas; i++) {
     // Add delay to avoid rate limiting
-    if (i > 0) await new Promise(resolve => setTimeout(resolve, 10000));
+    if (i > 0) await new Promise(resolve => setTimeout(resolve, 60000));
 
     const startDate = new Date(
       firstStart.getTime() + i * config.arena.intervalHours * 60 * 60 * 1000
