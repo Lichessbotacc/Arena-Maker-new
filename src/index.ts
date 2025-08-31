@@ -3,7 +3,7 @@ import { URLSearchParams } from "url";
 
 export const config = {
   server: "https://lichess.org",
-  team: "testing-codes",              // Team-ID aus der URL
+  team: "aggressivebot",              // Team-ID aus der URL
   oauthToken: process.env.OAUTH_TOKEN!, // dein Token (in GitHub Actions gesetzt)
   daysInAdvance: 1,                     // wie viele Tage im Voraus
   dryRun: false,                        // true = nur simulieren, false = wirklich erstellen
