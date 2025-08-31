@@ -22,7 +22,7 @@ function nextEvenUtcHour(from: Date): Date {
 }
 
 /**
- * Create Public Ultrabullet Arena Tournament
+ * Create Team Ultrabullet Arena Tournament
  */
 async function createArena(startDate: Date, nextLink: string) {
   const date = new Date(startDate);
@@ -36,9 +36,10 @@ async function createArena(startDate: Date, nextLink: string) {
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
     startDate: date.toISOString(),
+    teamBattleByTeam: config.team, // This makes it a team battle arena
   });
 
-  console.log(`Creating Hourly Ultrabullet Arena on ${date.toISOString()} UTC`);
+  console.log(`Creating Hourly Ultrabullet Arena on ${date.toISOString()} UTC for team ${config.team}`);
 
   if (config.dryRun) {
     console.log("DRY RUN Arena:", Object.fromEntries(body));
@@ -83,10 +84,11 @@ async function main() {
   const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
   const totalArenas = arenasPerDay * config.daysInAdvance;
 
-  console.log(`\n🏆 Creating ${totalArenas} Hourly Ultrabullet Arenas`);
+  console.log(`\n🏆 Creating ${totalArenas} Hourly Ultrabullet Arenas for team ${config.team}`);
   console.log(`⚡ Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
   console.log(`⏱️  Duration: ${config.arena.minutes} minutes`);
   console.log(`🔄 Frequency: Every ${config.arena.intervalHours} hour(s)`);
+  console.log(`👥 Team: ${config.team} (Team Battle format)`);
   console.log(`📅 Starting from: ${firstStart.toISOString()}`);
   console.log(`📊 Days in advance: ${config.daysInAdvance}`);
   console.log("");
