@@ -27,10 +27,10 @@ function nextEvenUtcHour(from: Date): Date {
 async function createTeamArena(startDate: Date, nextLink: string) {
   const date = new Date(startDate);
 
-  // Fix the "tba" issue by showing proper next tournament link
+  // Fix the next tournament link to show proper URL
   const nextTournamentLink = nextLink && nextLink !== "tba" 
     ? nextLink 
-    : "https://lichess.org/team/bluekinglk/tournaments";
+    : "https://lichess.org/team/darkonteams/tournaments";
 
   // Try different approaches to create team arena
   const approaches = [
@@ -38,14 +38,14 @@ async function createTeamArena(startDate: Date, nextLink: string) {
     {
       name: "Team Conditions",
       body: new URLSearchParams({
-        name: "Hourly Ultrabullet Arena",
-        description: `Must be in team bluekinglk
+        name: config.arena.name(), // "Hourly Ultrabullet" - Lichess adds "Arena" automatically
+        description: `Must be in team darkonteams
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/bluekinglk/tournaments
+24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
 
 Next tournament: ${nextTournamentLink}
 
-Join our team: https://lichess.org/team/bluekinglk
+Join our team: https://lichess.org/team/darkonteams
 
 Have fun!`,
         clockTime: String(config.arena.clockTime),
@@ -61,14 +61,14 @@ Have fun!`,
     {
       name: "Team Battle",
       body: new URLSearchParams({
-        name: "Hourly Ultrabullet Arena",
-        description: `Must be in team bluekinglk
+        name: config.arena.name(), // "Hourly Ultrabullet" - Lichess adds "Arena" automatically
+        description: `Must be in team darkonteams
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/bluekinglk/tournaments
+24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
 
 Next tournament: ${nextTournamentLink}
 
-Join our team: https://lichess.org/team/bluekinglk
+Join our team: https://lichess.org/team/darkonteams
 
 Have fun!`,
         clockTime: String(config.arena.clockTime),
@@ -124,14 +124,14 @@ Have fun!`,
   
   // Fallback: Create public arena
   const fallbackBody = new URLSearchParams({
-    name: "Hourly Ultrabullet Arena",
-    description: `Hosted by bluekinglk team
+    name: config.arena.name(), // "Hourly Ultrabullet" - Lichess adds "Arena" automatically
+    description: `Hosted by darkonteams team
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/bluekinglk/tournaments
+24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
 
 Next tournament: ${nextTournamentLink}
 
-Join our team: https://lichess.org/team/bluekinglk
+Join our team: https://lichess.org/team/darkonteams
 
 Have fun!`,
     clockTime: String(config.arena.clockTime),
@@ -171,21 +171,21 @@ async function main() {
   const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
   const totalArenas = arenasPerDay * config.daysInAdvance;
 
-  console.log(`\n🏆 Creating ${totalArenas} Team Arena Tournaments`);
+  console.log(`\n🏆 Creating ${totalArenas} Team Ultrabullet Tournaments`);
   console.log(`⚡ Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
   console.log(`⏱️  Duration: ${config.arena.minutes} minutes`);
   console.log(`🔄 Frequency: Every ${config.arena.intervalHours} hour(s)`);
-  console.log(`👥 Team: ${config.team} (Team-restricted tournaments)`);
+  console.log(`👥 Team: ${config.team} (DarkOnTeams)`);
   console.log(`📅 Starting from: ${firstStart.toISOString()}`);
   console.log(`📊 Days in advance: ${config.daysInAdvance}`);
   console.log("");
-  console.log("✅ Creating team arena tournaments...");
+  console.log("✅ Creating team tournaments for DarkOnTeams...");
   console.log("");
 
   let prevArenaUrl: string | null = null;
 
   for (let i = 0; i < totalArenas; i++) {
-    console.log(`\n--- Arena ${i + 1}/${totalArenas} ---`);
+    console.log(`\n--- Tournament ${i + 1}/${totalArenas} ---`);
     
     // Add delay to avoid rate limiting (except for first iteration)
     if (i > 0) {
@@ -198,21 +198,21 @@ async function main() {
     );
 
     try {
-      const arenaUrl = await createTeamArena(startDate, prevArenaUrl ?? "https://lichess.org/team/bluekinglk/tournaments");
+      const arenaUrl = await createTeamArena(startDate, prevArenaUrl ?? "https://lichess.org/team/darkonteams/tournaments");
       if (arenaUrl && arenaUrl !== "dry-run") {
         prevArenaUrl = arenaUrl;
       }
     } catch (error) {
-      console.error("❌ Error creating arena:", error);
+      console.error("❌ Error creating tournament:", error);
     }
   }
 
-  console.log("\n🎉 === Team Arena creation completed ===");
+  console.log("\n🎉 === DarkOnTeams Tournament creation completed ===");
   if (prevArenaUrl) {
-    console.log(`🔗 Last arena created: ${prevArenaUrl}`);
+    console.log(`🔗 Last tournament created: ${prevArenaUrl}`);
   }
   console.log("✅ All team tournaments scheduled successfully!");
-  console.log("📍 Check them at: https://lichess.org/team/bluekinglk");
+  console.log("📍 Check them at: https://lichess.org/team/darkonteams");
 }
 
 main().catch((err) => {
