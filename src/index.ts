@@ -3,10 +3,20 @@ import { URLSearchParams } from "url";
 
 export const config = {
   server: "https://lichess.org",
-  team: "AggressiveBot",              // Team-ID aus der URL
+  team: "aggressivebot",              // Team-ID aus der URL
   oauthToken: process.env.OAUTH_TOKEN!, // dein Token (in GitHub Actions gesetzt)
   daysInAdvance: 1,                     // wie viele Tage im Voraus
   dryRun: false,                        // true = nur simulieren, false = wirklich erstellen
+  arena: {
+    name: () => "Hourly Ultrabullet Arena",
+    description: (nextLink: string) => `Next: ${nextLink}`,
+    clockTime: 0.25,       // Minuten pro Spieler (0.25 = 15 Sekunden)
+    clockIncrement: 0,
+    minutes: 60,          // Turnierdauer (1h)
+    rated: true,
+    variant: "standard",
+    intervalHours: 1,      // alle 1 Stunde
+  },
   swiss: {
     name: () => "Hourly Ultrabullet Swiss",
     description: (nextLink: string) => `Next: ${nextLink}`,
@@ -17,6 +27,9 @@ export const config = {
     variant: "standard",
     intervalHours: 1,      // alle 1 Stunde
   },
+  // Set which tournament types to create
+  createArenas: true,
+  createSwiss: false,  // Set to false initially due to team leadership issue
 };
 
 function assertEnv() {
@@ -36,6 +49,60 @@ function nextEvenUtcHour(from: Date): Date {
   const nextEven = Math.floor(h / 2) * 2 + 2;
   d.setUTCHours(nextEven, 0, 0, 0);
   return d;
+}
+
+async function createArena(startDate: Date, nextLink: string) {
+  const date = new Date(startDate);
+  date.setDate(date.getDate() + 0);
+
+  const body = new URLSearchParams({
+    name: config.arena.name(),
+    description: config.arena.description(nextLink),
+    clockTime: String(config.arena.clockTime), // in Minuten
+    clockIncrement: String(config.arena.clockIncrement),
+    minutes: String(config.arena.minutes),
+    rated: config.arena.rated ? "true" : "false",
+    variant: config.arena.variant,
+    startDate: date.toISOString(),
+  });
+
+  console.log(`Creating arena tournament on ${date.toISOString()} UTC`);
+
+  if (config.dryRun) {
+    console.log("DRY RUN Arena:", Object.fromEntries(body));
+    return "dry-run";
+  }
+
+  console.log("Making API request to:", `${config.server}/api/tournament`);
+  console.log("Request body:", Object.fromEntries(body));
+
+  const res = await fetch(
+    `${config.server}/api/tournament`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.oauthToken}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+      body,
+    }
+  );
+
+  console.log("Response status:", res.status);
+  console.log("Response headers:", Object.fromEntries(res.headers.entries()));
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("Arena creation failed:", res.status, errText);
+    return null;
+  }
+
+  const data = await res.json();
+  console.log("Response body:", data);
+  const url = data.id ? `${config.server}/tournament/${data.id}` : res.headers.get("Location");
+  console.log("Arena created:", url);
+  return url;
 }
 
 async function createSwiss(startDate: Date, nextLink: string) {
@@ -99,23 +166,53 @@ async function main() {
   const now = new Date();
   const firstStart = nextEvenUtcHour(now);
 
-  const swissPerDay = Math.floor(24 / config.swiss.intervalHours);
-  const totalSwiss = swissPerDay * config.daysInAdvance;
+  let totalTournaments = 0;
+  let tournamentsPerDay = 0;
 
-  console.log(`Creating ${totalSwiss} Swiss tournaments for team ${config.team}`);
+  // Calculate total tournaments based on enabled types
+  if (config.createArenas) {
+    tournamentsPerDay += Math.floor(24 / config.arena.intervalHours);
+  }
+  if (config.createSwiss) {
+    tournamentsPerDay += Math.floor(24 / config.swiss.intervalHours);
+  }
+  
+  totalTournaments = tournamentsPerDay * config.daysInAdvance;
 
-  let prevUrl: string | null = null;
+  console.log(`Creating ${totalTournaments} tournaments:`);
+  if (config.createArenas) console.log(`- Arena tournaments enabled`);
+  if (config.createSwiss) console.log(`- Swiss tournaments enabled for team ${config.team}`);
 
-  for (let i = 0; i < totalSwiss; i++) {
-    // Add delay to avoid rate limiting
-    if (i > 0) await new Promise(resolve => setTimeout(resolve, 60000));
+  let prevArenaUrl: string | null = null;
+  let prevSwissUrl: string | null = null;
+
+  for (let i = 0; i < Math.max(
+    config.createArenas ? Math.floor(24 / config.arena.intervalHours) * config.daysInAdvance : 0,
+    config.createSwiss ? Math.floor(24 / config.swiss.intervalHours) * config.daysInAdvance : 0
+  ); i++) {
+    
+    // Add delay to avoid rate limiting (except for first iteration)
+    if (i > 0) await new Promise(resolve => setTimeout(resolve, 30000)); // Reduced delay
 
     const startDate = new Date(
-      firstStart.getTime() + i * config.swiss.intervalHours * 60 * 60 * 1000
+      firstStart.getTime() + i * Math.min(
+        config.createArenas ? config.arena.intervalHours : Infinity,
+        config.createSwiss ? config.swiss.intervalHours : Infinity
+      ) * 60 * 60 * 1000
     );
 
-    const swissUrl = await createSwiss(startDate, prevUrl ?? "tba");
-    if (swissUrl) prevUrl = swissUrl;
+    // Create arena tournament if enabled
+    if (config.createArenas && i < Math.floor(24 / config.arena.intervalHours) * config.daysInAdvance) {
+      const arenaUrl = await createArena(startDate, prevArenaUrl ?? "tba");
+      if (arenaUrl) prevArenaUrl = arenaUrl;
+    }
+
+    // Create Swiss tournament if enabled (with additional delay)
+    if (config.createSwiss && i < Math.floor(24 / config.swiss.intervalHours) * config.daysInAdvance) {
+      if (config.createArenas) await new Promise(resolve => setTimeout(resolve, 10000)); // Extra delay if both types
+      const swissUrl = await createSwiss(startDate, prevSwissUrl ?? "tba");
+      if (swissUrl) prevSwissUrl = swissUrl;
+    }
   }
 }
 
