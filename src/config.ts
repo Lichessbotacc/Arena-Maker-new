@@ -6,32 +6,32 @@ export const config = {
   dryRun: false, // true = simulate only, false = actually create
 
   arena: {
-    name: () => "Hourly Ultrabullet Arena",
+    name: () => "Hourly Ultrabullet Team Battle",
     description: (nextLink?: string) => `Next: ${nextLink ?? "coming soon"}`,
     
-    // Tournament settings
+    // Tournament settings - ULTRABULLET (15+0)
     clockTime: 0.25,        // Minutes -> 0.25 = 15 seconds
-    clockIncrement: 0,      // Increment in seconds
-    minutes: 60,            // Duration in minutes
+    clockIncrement: 0,      // No increment
+    minutes: 60,            // Duration: 1 hour
     rated: true,            // Rated games
-    variant: "standard",    // "standard", "chess960", etc.
+    variant: "standard",    // Standard chess
     intervalHours: 1,       // Create new arena every 1 hour
   },
 
   swiss: {
-    name: () => "Hourly Ultrabullet Swiss",
+    name: () => "Hourly Blitz Swiss",
     description: (nextLink?: string) => `Next: ${nextLink ?? "coming soon"}`,
     
-    // Tournament settings
-    clockTime: 0.25,        // Minutes -> 0.25 = 15 seconds
-    clockIncrement: 0,      // Increment in seconds
+    // Tournament settings - BLITZ (3+0)
+    clockTime: 3,           // Minutes -> 3 minutes
+    clockIncrement: 0,      // No increment
     nbRounds: 5,           // Number of rounds
     rated: true,            // Rated games
-    variant: "standard",    // "standard", "chess960", etc.
+    variant: "standard",    // Standard chess
     intervalHours: 1,       // Create new Swiss every 1 hour
   },
 
   // Control which tournament types to create
-  createArenas: true,  // Create public arena tournaments
-  createSwiss: true,   // Create team Swiss tournaments (requires team leadership)
+  createArenas: true,  // Create team battle arena tournaments (Ultrabullet 15+0)
+  createSwiss: true,   // Create team Swiss tournaments (Blitz 3+0) - requires team leadership
 };
