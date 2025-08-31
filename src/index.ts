@@ -22,33 +22,34 @@ function nextEvenUtcHour(from: Date): Date {
 }
 
 /**
- * Create Swiss Tournament (since this works) but with arena-like settings
+ * Create Public Arena Tournament (no team restrictions)
  */
-async function createSwissAsArena(startDate: Date, nextLink: string) {
+async function createPublicArena(startDate: Date, nextLink: string) {
   const date = new Date(startDate);
 
   const body = new URLSearchParams({
     name: config.arena.name(),
     description: config.arena.description(nextLink),
-    "clock.limit": String(config.arena.clockTime * 60), // Convert minutes to seconds
-    "clock.increment": String(config.arena.clockIncrement),
-    nbRounds: "7", // More rounds to make it feel like an arena
+    clockTime: String(config.arena.clockTime), // in minutes
+    clockIncrement: String(config.arena.clockIncrement),
+    minutes: String(config.arena.minutes),
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
-    startsAt: date.toISOString(),
+    startDate: date.toISOString(),
+    // NO team parameters = public tournament
   });
 
-  console.log(`Creating Swiss tournament (arena-style) on ${date.toISOString()} UTC for team ${config.team}`);
+  console.log(`Creating public arena tournament on ${date.toISOString()} UTC`);
 
   if (config.dryRun) {
-    console.log("DRY RUN Swiss:", Object.fromEntries(body));
+    console.log("DRY RUN Arena:", Object.fromEntries(body));
     return "dry-run";
   }
 
-  console.log("Making API request to:", `${config.server}/api/swiss/new/${config.team}`);
+  console.log("Making API request to:", `${config.server}/api/tournament`);
   console.log("Request body:", Object.fromEntries(body));
 
-  const res = await fetch(`${config.server}/api/swiss/new/${config.team}`, {
+  const res = await fetch(`${config.server}/api/tournament`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.oauthToken}`,
@@ -63,14 +64,14 @@ async function createSwissAsArena(startDate: Date, nextLink: string) {
 
   if (!res.ok) {
     const errText = await res.text();
-    console.error("Swiss tournament creation failed:", res.status, errText);
+    console.error("Arena creation failed:", res.status, errText);
     return null;
   }
 
   const data = await res.json();
   console.log("Response body:", data);
-  const url = data.id ? `${config.server}/swiss/${data.id}` : res.headers.get("Location");
-  console.log("✅ Swiss tournament (arena-style) created:", url);
+  const url = data.id ? `${config.server}/tournament/${data.id}` : res.headers.get("Location");
+  console.log("✅ Public arena created:", url);
   return url;
 }
 
@@ -80,22 +81,25 @@ async function main() {
   const now = new Date();
   const firstStart = nextEvenUtcHour(now);
 
-  const tournamentsPerDay = Math.floor(24 / config.arena.intervalHours);
-  const totalTournaments = tournamentsPerDay * config.daysInAdvance;
+  const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
+  const totalArenas = arenasPerDay * config.daysInAdvance;
 
-  console.log(`\n🏆 Creating ${totalTournaments} Swiss Tournaments (Arena-style)`);
+  console.log(`\n🏆 Creating ${totalArenas} Public Ultrabullet Arenas`);
   console.log(`⚡ Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
-  console.log(`🎯 Format: Swiss with 7 rounds (feels like arena)`);
+  console.log(`⏱️  Duration: ${config.arena.minutes} minutes`);
   console.log(`🔄 Frequency: Every ${config.arena.intervalHours} hour(s)`);
-  console.log(`👥 Team: ${config.team} (Team Swiss tournaments)`);
+  console.log(`🌍 Type: Public Arena (anyone can join)`);
   console.log(`📅 Starting from: ${firstStart.toISOString()}`);
   console.log(`📊 Days in advance: ${config.daysInAdvance}`);
   console.log("");
+  console.log("⚠️  NOTE: These are PUBLIC tournaments (not team-specific)");
+  console.log("💡 To create team tournaments, you need to be a team leader!");
+  console.log("");
 
-  let prevTournamentUrl: string | null = null;
+  let prevArenaUrl: string | null = null;
 
-  for (let i = 0; i < totalTournaments; i++) {
-    console.log(`\n--- Tournament ${i + 1}/${totalTournaments} ---`);
+  for (let i = 0; i < totalArenas; i++) {
+    console.log(`\n--- Arena ${i + 1}/${totalArenas} ---`);
     
     // Add delay to avoid rate limiting (except for first iteration)
     if (i > 0) {
@@ -108,21 +112,21 @@ async function main() {
     );
 
     try {
-      const tournamentUrl = await createSwissAsArena(startDate, prevTournamentUrl ?? "tba");
-      if (tournamentUrl && tournamentUrl !== "dry-run") {
-        prevTournamentUrl = tournamentUrl;
+      const arenaUrl = await createPublicArena(startDate, prevArenaUrl ?? "tba");
+      if (arenaUrl && arenaUrl !== "dry-run") {
+        prevArenaUrl = arenaUrl;
       }
     } catch (error) {
-      console.error("❌ Error creating tournament:", error);
+      console.error("❌ Error creating arena:", error);
     }
   }
 
-  console.log("\n🎉 === Swiss Tournament (Arena-style) creation completed ===");
-  if (prevTournamentUrl) {
-    console.log(`🔗 Last tournament created: ${prevTournamentUrl}`);
+  console.log("\n🎉 === Public Arena creation completed ===");
+  if (prevArenaUrl) {
+    console.log(`🔗 Last arena created: ${prevArenaUrl}`);
   }
-  console.log("✅ All tournaments scheduled successfully!");
-  console.log("📍 Check them at: https://lichess.org/team/bluekinglk");
+  console.log("✅ All public tournaments scheduled successfully!");
+  console.log("📍 Find them in the main Lichess tournament lobby!");
 }
 
 main().catch((err) => {
