@@ -22,7 +22,7 @@ function nextEvenUtcHour(from: Date): Date {
 }
 
 /**
- * Create Team Arena Tournament (team-restricted like DarkOnBot example)
+ * Create Team Battle Arena (ONLY working way to associate with team)
  */
 async function createArena(startDate: Date, nextLink: string) {
   const date = new Date(startDate);
@@ -36,11 +36,10 @@ async function createArena(startDate: Date, nextLink: string) {
     rated: config.arena.rated ? "true" : "false",
     variant: config.arena.variant,
     startDate: date.toISOString(),
-    // Add team restriction condition
-    "conditions.teamMember.teamId": config.team,
+    teamBattleByTeam: config.team, // This is the ONLY way that works
   });
 
-  console.log(`Creating team arena on ${date.toISOString()} UTC for team ${config.team}`);
+  console.log(`Creating team battle arena on ${date.toISOString()} UTC for team ${config.team}`);
 
   if (config.dryRun) {
     console.log("DRY RUN Arena:", Object.fromEntries(body));
@@ -72,7 +71,7 @@ async function createArena(startDate: Date, nextLink: string) {
   const data = await res.json();
   console.log("Response body:", data);
   const url = data.id ? `${config.server}/tournament/${data.id}` : res.headers.get("Location");
-  console.log("Team arena created:", url);
+  console.log("✅ Team battle arena created:", url);
   return url;
 }
 
@@ -85,12 +84,11 @@ async function main() {
   const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
   const totalArenas = arenasPerDay * config.daysInAdvance;
 
-  console.log(`\n🏆 Creating ${totalArenas} Team Ultrabullet Arenas`);
+  console.log(`\n🏆 Creating ${totalArenas} Team Battle Ultrabullet Arenas`);
   console.log(`⚡ Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
   console.log(`⏱️  Duration: ${config.arena.minutes} minutes`);
   console.log(`🔄 Frequency: Every ${config.arena.intervalHours} hour(s)`);
-  console.log(`👥 Team: ${config.team} (Must be in team to join)`);
-  console.log(`🌍 Type: Team Arena (like DarkOnBot example)`);
+  console.log(`👥 Team: ${config.team} (Team Battle format)`);
   console.log(`📅 Starting from: ${firstStart.toISOString()}`);
   console.log(`📊 Days in advance: ${config.daysInAdvance}`);
   console.log("");
@@ -120,12 +118,12 @@ async function main() {
     }
   }
 
-  console.log("\n🎉 === Team Ultrabullet Arena creation completed ===");
+  console.log("\n🎉 === Team Battle Arena creation completed ===");
   if (prevArenaUrl) {
     console.log(`🔗 Last arena created: ${prevArenaUrl}`);
   }
-  console.log("✅ All team tournaments scheduled successfully!");
-  console.log("📍 Check them at: https://lichess.org/team/bluekinglk/tournaments");
+  console.log("✅ All tournaments scheduled successfully!");
+  console.log("📍 Check them at: https://lichess.org/team/bluekinglk");
 }
 
 main().catch((err) => {
