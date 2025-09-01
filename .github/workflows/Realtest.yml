@@ -1,13 +1,19 @@
-name: Hourly Tournament Creator
+name: Professional Tournament Creator
 
 on:
   workflow_dispatch:       # Manual trigger available
   schedule:
     - cron: "0 * * * *"    # Every hour (UTC)
 
+# Prevent multiple workflows from running simultaneously
+concurrency:
+  group: tournament-creator
+  cancel-in-progress: true
+
 jobs:
   create-tournaments:
     runs-on: ubuntu-latest
+    timeout-minutes: 30    # Prevent hanging workflows
 
     steps:
       - name: Checkout repository
@@ -22,12 +28,13 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Create Hourly Tournaments
+      - name: Create Professional Tournaments
         env:
           OAUTH_TOKEN: ${{ secrets.OAUTH_TOKEN }}
+        timeout-minutes: 25
         run: npx ts-node src/index.ts
 
       - name: Log completion
         run: |
-          echo "Hourly tournament creation completed at $(date)"
-          echo "Next run scheduled for $(date -d '+1 hour')"
+          echo "Professional tournament creation completed at $(date)"
+          echo "Next run scheduled for $(date -d '+2 hours')"
