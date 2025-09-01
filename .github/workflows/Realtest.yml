@@ -3,7 +3,7 @@ name: Professional Tournament Creator
 on:
   workflow_dispatch:       # Manual trigger available
   schedule:
-    - cron: "0 * * * *"    # Every hour (UTC)
+    - cron: "58 */3 * * *"  # Every 3 hours at :58 minutes (UTC)
 
 # Prevent multiple workflows from running simultaneously
 concurrency:
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Create Professional Tournaments
+      - name: Create 3 Hourly Tournaments
         env:
           OAUTH_TOKEN: ${{ secrets.OAUTH_TOKEN }}
         timeout-minutes: 25
@@ -36,5 +36,5 @@ jobs:
 
       - name: Log completion
         run: |
-          echo "Professional tournament creation completed at $(date)"
-          echo "Next run scheduled for $(date -d '+2 hours')"
+          echo "3 tournaments created successfully at $(date)"
+          echo "Next run scheduled for $(date -d '+3 hours')"
