@@ -15,12 +15,12 @@ export const config = {
     minutes: 60,            // Duration: 1 hour
     rated: true,            // Rated games
     variant: "standard",    // Standard chess
-    intervalHours: 1,       // Create new arena every 1 hour (hourly schedule)
+    intervalHours: 3,       // Create new arena every 3 hours (matches workflow schedule)
   },
 
-  // Fixed tournament schedule - every hour starting at each UTC hour
+  // Fixed tournament schedule - every 3 hours starting at specific UTC hours
   schedule: {
-    startHours: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], // Every hour in UTC
+    startHours: [0, 3, 6, 9, 12, 15, 18, 21], // Every 3 hours in UTC (matches workflow)
     timezone: 'UTC'
   }
 };
