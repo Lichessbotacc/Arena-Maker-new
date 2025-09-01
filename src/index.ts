@@ -24,12 +24,8 @@ function nextUtcHour(from: Date): Date {
 /**
  * Try to create team-restricted Arena tournament
  */
-async function createTeamArena(startDate: Date, nextTournamentUrl?: string) {
+async function createTeamArena(startDate: Date, nextTournamentUrl: string) {
   const date = new Date(startDate);
-
-  // Calculate next tournament time (1 hour later for hourly schedule)
-  const nextTournamentTime = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
-  const nextTournamentLink = nextTournamentUrl || `Next tournament starts at ${nextTournamentTime.toISOString().replace('T', ' ').substring(0, 16)} UTC`;
 
   // Try different approaches to create team arena
   const approaches = [
@@ -38,13 +34,15 @@ async function createTeamArena(startDate: Date, nextTournamentUrl?: string) {
       name: "Team Conditions",
       body: new URLSearchParams({
         name: config.arena.name(),
-        description: `TEST: HOURLY ULTRABULLET TOURNAMENTS
+        description: `THE HOURLY ULTRABULLET TOURNAMENTS ARE BACK!!!
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/aggressivebot001/tournaments
 
-Next tournament: ${nextTournamentLink}
+Next tournament: ${nextTournamentUrl}
 
-Testing automated tournament creation.
+My Birthday MONEY swiss: https://lichess.org/swiss/hzoaP32T
+Our Discord Group: https://discord.gg/cNS3u7Gnbn
+Our Whatsapp Group: https://chat.whatsapp.com/CLdKn9VzUrL0VN2vrcOJDT?mode=ac_t
 
 Have fun!`,
         clockTime: String(config.arena.clockTime),
@@ -107,11 +105,11 @@ Have fun!`,
   // Fallback: Create public arena
   const fallbackBody = new URLSearchParams({
     name: config.arena.name(),
-    description: `TEST: Hosted by aggressivebot001 team
+    description: `Hosted by aggressivebot001 team
 
 24/7 Ultrabullet tournaments: https://lichess.org/team/aggressivebot001/tournaments
 
-Next tournament: ${nextTournamentLink}
+Next tournament: ${nextTournamentUrl}
 
 Join our team: https://lichess.org/team/aggressivebot001
 
@@ -148,38 +146,75 @@ async function main() {
   assertEnv();
 
   const now = new Date();
-  const nextStart = nextUtcHour(now);
+  const firstStart = nextUtcHour(now);
 
-  console.log(`\nCreating Hourly Ultrabullet Tournament`);
-  console.log(`Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
-  console.log(`Duration: ${config.arena.minutes} minutes`);
+  console.log(`\n=== Creating 3 Hourly UltraBullet Tournaments ===`);
+  console.log(`Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (UltraBullet)`);
+  console.log(`Duration: ${config.arena.minutes} minutes each`);
   console.log(`Team: ${config.team} (AggressiveBot001 - Testing)`);
-  console.log(`Tournament start time: ${nextStart.toISOString()}`);
+  console.log(`First tournament starts: ${firstStart.toISOString()}`);
+  console.log(`Creating tournaments for: ${firstStart.toISOString()}, ${new Date(firstStart.getTime() + 60*60*1000).toISOString()}, ${new Date(firstStart.getTime() + 2*60*60*1000).toISOString()}`);
   console.log("");
 
+  const createdTournaments = [];
+
   try {
-    // Calculate next tournament time (1 hour later)
-    const nextTournamentTime = new Date(nextStart.getTime() + 1 * 60 * 60 * 1000);
-    const nextTournamentInfo = `Next tournament: ${nextTournamentTime.toISOString().replace('T', ' ').substring(0, 16)} UTC`;
-    
-    console.log("Creating hourly tournament for AggressiveBot001 (Testing)...");
-    const arenaUrl = await createTeamArena(nextStart, nextTournamentInfo);
-    
-    if (arenaUrl && arenaUrl !== "dry-run") {
-      console.log("\n=== Hourly Tournament created successfully ===");
-      console.log(`Tournament URL: ${arenaUrl}`);
-      console.log(`Start time: ${nextStart.toISOString()}`);
-      console.log(`Next tournament: ${nextTournamentTime.toISOString()}`);
+    // Create 3 tournaments
+    for (let i = 0; i < 3; i++) {
+      console.log(`\n--- Creating Tournament ${i + 1}/3 ---`);
+      
+      // Add delay between tournaments (except first)
+      if (i > 0) {
+        console.log("Waiting 2 minutes to avoid rate limiting...");
+        await new Promise(resolve => setTimeout(resolve, 120000)); // 2 minutes
+      }
+
+      const startDate = new Date(firstStart.getTime() + i * 60 * 60 * 1000); // Each hour
+      
+      // Determine next tournament link
+      let nextTournamentUrl;
+      if (i < 2) {
+        // For tournaments 1 & 2: will be updated with actual URL after creation
+        nextTournamentUrl = "TBA";
+      } else {
+        // For tournament 3: link to team page
+        nextTournamentUrl = "https://lichess.org/team/aggressivebot001/tournaments";
+      }
+
+      console.log(`Creating tournament for ${startDate.toISOString()}`);
+      const arenaUrl = await createTeamArena(startDate, nextTournamentUrl);
+      
+      if (arenaUrl && arenaUrl !== "dry-run") {
+        createdTournaments.push({
+          url: arenaUrl,
+          startTime: startDate,
+          index: i
+        });
+        console.log(`✅ Tournament ${i + 1} created: ${arenaUrl}`);
+      } else {
+        console.error(`❌ Tournament ${i + 1} creation failed`);
+      }
+    }
+
+    // Summary
+    console.log("\n=== Tournament Creation Summary ===");
+    if (createdTournaments.length > 0) {
+      console.log(`✅ Successfully created ${createdTournaments.length}/3 tournaments:`);
+      createdTournaments.forEach((tournament, index) => {
+        console.log(`   ${index + 1}. ${tournament.url} (starts: ${tournament.startTime.toISOString()})`);
+      });
     } else {
-      console.log("\n=== Tournament creation failed ===");
+      console.log("❌ No tournaments were created successfully");
       process.exit(1);
     }
+
   } catch (error) {
-    console.error("Error creating tournament:", error);
+    console.error("Error in tournament creation process:", error);
     process.exit(1);
   }
 
-  console.log("Check all tournaments at: https://lichess.org/team/aggressivebot001");
+  console.log("\nCheck all tournaments at: https://lichess.org/team/aggressivebot001/tournaments");
+  console.log("Next workflow will run in 3 hours to create the next batch of tournaments.");
   
   // Properly exit the process to prevent workflow from hanging
   console.log("Process completed successfully. Exiting...");
