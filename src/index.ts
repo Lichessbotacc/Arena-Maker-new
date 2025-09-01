@@ -36,7 +36,7 @@ async function createTeamArena(startDate: Date, nextTournamentUrl: string) {
         name: config.arena.name(),
         description: `THE HOURLY ULTRABULLET TOURNAMENTS ARE BACK!!!
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/aggressivebot001/tournaments
+24/7 Ultrabullet tournaments: https://lichess.org/team/rare/tournaments
 
 Next tournament: ${nextTournamentUrl}
 
@@ -105,13 +105,13 @@ Have fun!`,
   // Fallback: Create public arena
   const fallbackBody = new URLSearchParams({
     name: config.arena.name(),
-    description: `Hosted by aggressivebot001 team
+    description: `Hosted by rare team
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/aggressivebot001/tournaments
+24/7 Ultrabullet tournaments: https://lichess.org/team/rare/tournaments
 
 Next tournament: ${nextTournamentUrl}
 
-Join our team: https://lichess.org/team/aggressivebot001
+Join our team: https://lichess.org/team/rare
 
 Have fun!`,
     clockTime: String(config.arena.clockTime),
@@ -151,7 +151,7 @@ async function main() {
   console.log(`\n=== Creating 3 Hourly UltraBullet Tournaments ===`);
   console.log(`Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (UltraBullet)`);
   console.log(`Duration: ${config.arena.minutes} minutes each`);
-  console.log(`Team: ${config.team} (AggressiveBot001 - Testing)`);
+  console.log(`Team: ${config.team} (Rare Team)`);
   console.log(`First tournament starts: ${firstStart.toISOString()}`);
   console.log(`Creating tournaments for: ${firstStart.toISOString()}, ${new Date(firstStart.getTime() + 60*60*1000).toISOString()}, ${new Date(firstStart.getTime() + 2*60*60*1000).toISOString()}`);
   console.log("");
@@ -159,12 +159,14 @@ async function main() {
   const createdTournaments = [];
 
   try {
-    // Create 3 tournaments
-    for (let i = 0; i < 3; i++) {
+    // Create tournaments in reverse order so we can link them properly
+    console.log("Creating tournaments in reverse order to enable proper linking...");
+    
+    for (let i = 2; i >= 0; i--) {
       console.log(`\n--- Creating Tournament ${i + 1}/3 ---`);
       
       // Add delay between tournaments (except first)
-      if (i > 0) {
+      if (i < 2) {
         console.log("Waiting 2 minutes to avoid rate limiting...");
         await new Promise(resolve => setTimeout(resolve, 120000)); // 2 minutes
       }
@@ -173,15 +175,21 @@ async function main() {
       
       // Determine next tournament link
       let nextTournamentUrl;
-      if (i < 2) {
-        // For tournaments 1 & 2: will be updated with actual URL after creation
-        nextTournamentUrl = "TBA";
+      if (i === 2) {
+        // Tournament 3: link to team page
+        nextTournamentUrl = "https://lichess.org/team/rare/tournaments";
+      } else if (i === 1) {
+        // Tournament 2: link to tournament 3 (already created)
+        const tournament3 = createdTournaments.find(t => t.index === 2);
+        nextTournamentUrl = tournament3 ? tournament3.url : "https://lichess.org/team/rare/tournaments";
       } else {
-        // For tournament 3: link to team page
-        nextTournamentUrl = "https://lichess.org/team/aggressivebot001/tournaments";
+        // Tournament 1: link to tournament 2 (already created)
+        const tournament2 = createdTournaments.find(t => t.index === 1);
+        nextTournamentUrl = tournament2 ? tournament2.url : "https://lichess.org/team/rare/tournaments";
       }
 
       console.log(`Creating tournament for ${startDate.toISOString()}`);
+      console.log(`Next tournament link: ${nextTournamentUrl}`);
       const arenaUrl = await createTeamArena(startDate, nextTournamentUrl);
       
       if (arenaUrl && arenaUrl !== "dry-run") {
@@ -195,6 +203,9 @@ async function main() {
         console.error(`❌ Tournament ${i + 1} creation failed`);
       }
     }
+
+    // Sort tournaments by start time for display
+    createdTournaments.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 
     // Summary
     console.log("\n=== Tournament Creation Summary ===");
@@ -213,7 +224,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("\nCheck all tournaments at: https://lichess.org/team/aggressivebot001/tournaments");
+  console.log("\nCheck all tournaments at: https://lichess.org/team/rare/tournaments");
   console.log("Next workflow will run in 3 hours to create the next batch of tournaments.");
   
   // Properly exit the process to prevent workflow from hanging
