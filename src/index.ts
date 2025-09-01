@@ -174,7 +174,7 @@ async function main() {
       
       // For now, use team page as next tournament link
       // We'll update this after all tournaments are created
-      const nextTournamentUrl = "https://lichess.org/team/rare/tournaments";
+      const nextTournamentUrl = "https://lichess.org/team/darkonteams/tournaments";
 
       console.log(`Creating tournament for ${startDate.toISOString()}`);
       const arenaUrl = await createTeamArena(startDate, nextTournamentUrl);
