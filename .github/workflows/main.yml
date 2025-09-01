@@ -1,31 +1,21 @@
-name: Create Lichess Tournaments
+# This workflow is disabled to prevent conflicts with the main tournament creator
+name: "Disabled - Create Lichess Tournaments"
 
 on:
-  workflow_dispatch:   # Manual trigger
-  schedule:
-    - cron: "0 */2 * * *"   # Every 2 hours (adjust as needed)
+  # Disabled - no triggers
+  workflow_dispatch:
+    inputs:
+      disabled:
+        description: 'This workflow is disabled'
+        required: false
+        default: 'Use Realtest.yml instead'
 
 jobs:
-  create-tournaments:
+  disabled:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Create Tournaments
-        env:
-          OAUTH_TOKEN: ${{ secrets.OAUTH_TOKEN }}
-        run: yarn ts-node src/index.ts
-
-      - name: Log completion
-        run: echo "Tournament creation workflow completed at $(date)"
+      - name: Workflow Disabled
+        run: |
+          echo "This workflow has been disabled to prevent conflicts"
+          echo "Use the Professional Tournament Creator (Realtest.yml) instead"
+          exit 1
