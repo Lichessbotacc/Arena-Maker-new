@@ -11,43 +11,40 @@ function assertEnv() {
 }
 
 /**
- * Get next even UTC hour: 00:00, 02:00, 04:00 ...
+ * Get next UTC hour: 00:00, 01:00, 02:00, 03:00 ...
  */
-function nextEvenUtcHour(from: Date): Date {
+function nextUtcHour(from: Date): Date {
   const d = new Date(from);
   const h = d.getUTCHours();
-  const nextEven = Math.floor(h / 2) * 2 + 2;
-  d.setUTCHours(nextEven, 0, 0, 0);
+  const nextHour = h + 1;
+  d.setUTCHours(nextHour, 0, 0, 0);
   return d;
 }
 
 /**
  * Try to create team-restricted Arena tournament
  */
-async function createTeamArena(startDate: Date, nextLink: string) {
+async function createTeamArena(startDate: Date, nextTournamentUrl?: string) {
   const date = new Date(startDate);
 
-  // Fix the next tournament link to show proper URL
-  const nextTournamentLink = nextLink && nextLink !== "tba" 
-    ? nextLink 
-    : "https://lichess.org/team/darkonteams/tournaments";
+  // Calculate next tournament time (1 hour later for hourly schedule)
+  const nextTournamentTime = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
+  const nextTournamentLink = nextTournamentUrl || `Next tournament starts at ${nextTournamentTime.toISOString().replace('T', ' ').substring(0, 16)} UTC`;
 
   // Try different approaches to create team arena
   const approaches = [
-    // Approach 1: Team conditions
+    // Approach 1: Team conditions (preferred - creates regular arena with team restriction)
     {
       name: "Team Conditions",
       body: new URLSearchParams({
         name: config.arena.name(),
-        description: `THE HOURLY ULTRABULLET TOURNAMENTS ARE BACK!!!
+        description: `TEST: HOURLY ULTRABULLET TOURNAMENTS
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
+24/7 Ultrabullet tournaments: https://lichess.org/team/aggressivebot001/tournaments
 
 Next tournament: ${nextTournamentLink}
 
-My Birthday MONEY swiss: https://lichess.org/swiss/hzoaP32T
-Our Discord Group: https://discord.gg/cNS3u7Gnbn
-Our Whatsapp Group: https://chat.whatsapp.com/CLdKn9VzUrL0VN2vrcOJDT?mode=ac_t
+Testing automated tournament creation.
 
 Have fun!`,
         clockTime: String(config.arena.clockTime),
@@ -57,29 +54,6 @@ Have fun!`,
         variant: config.arena.variant,
         startDate: date.toISOString(),
         "conditions.teamMember.teamId": config.team,
-      })
-    },
-    // Approach 2: Team battle with single team
-    {
-      name: "Team Battle",
-      body: new URLSearchParams({
-        name: config.arena.name(),
-        description: `Must be in team darkonteams
-
-24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
-
-Next tournament: ${nextTournamentLink}
-
-Join our team: https://lichess.org/team/darkonteams
-
-Have fun!`,
-        clockTime: String(config.arena.clockTime),
-        clockIncrement: String(config.arena.clockIncrement),
-        minutes: String(config.arena.minutes),
-        rated: config.arena.rated ? "true" : "false",
-        variant: config.arena.variant,
-        startDate: date.toISOString(),
-        teamBattleByTeam: config.team,
       })
     }
   ];
@@ -133,13 +107,13 @@ Have fun!`,
   // Fallback: Create public arena
   const fallbackBody = new URLSearchParams({
     name: config.arena.name(),
-    description: `Hosted by darkonteams team
+    description: `TEST: Hosted by aggressivebot001 team
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/darkonteams/tournaments
+24/7 Ultrabullet tournaments: https://lichess.org/team/aggressivebot001/tournaments
 
 Next tournament: ${nextTournamentLink}
 
-Join our team: https://lichess.org/team/darkonteams
+Join our team: https://lichess.org/team/aggressivebot001
 
 Have fun!`,
     clockTime: String(config.arena.clockTime),
@@ -174,54 +148,42 @@ async function main() {
   assertEnv();
 
   const now = new Date();
-  const firstStart = nextEvenUtcHour(now);
+  const nextStart = nextUtcHour(now);
 
-  const arenasPerDay = Math.floor(24 / config.arena.intervalHours);
-  const totalArenas = arenasPerDay * config.daysInAdvance;
-
-  console.log(`\nCreating ${totalArenas} Team Ultrabullet Tournaments`);
+  console.log(`\nCreating Hourly Ultrabullet Tournament`);
   console.log(`Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (Ultrabullet)`);
   console.log(`Duration: ${config.arena.minutes} minutes`);
-  console.log(`Frequency: Every ${config.arena.intervalHours} hour(s)`);
-  console.log(`Team: ${config.team} (DarkOnTeams)`);
-  console.log(`Starting from: ${firstStart.toISOString()}`);
-  console.log(`Days in advance: ${config.daysInAdvance}`);
-  console.log("");
-  console.log("Creating team tournaments for DarkOnTeams...");
-  console.log("Using longer delays to avoid rate limiting");
+  console.log(`Team: ${config.team} (AggressiveBot001 - Testing)`);
+  console.log(`Tournament start time: ${nextStart.toISOString()}`);
   console.log("");
 
-  let prevArenaUrl: string | null = null;
-
-  for (let i = 0; i < totalArenas; i++) {
-    console.log(`\n--- Tournament ${i + 1}/${totalArenas} ---`);
+  try {
+    // Calculate next tournament time (1 hour later)
+    const nextTournamentTime = new Date(nextStart.getTime() + 1 * 60 * 60 * 1000);
+    const nextTournamentInfo = `Next tournament: ${nextTournamentTime.toISOString().replace('T', ' ').substring(0, 16)} UTC`;
     
-    // INCREASED delay to avoid rate limiting (except for first iteration)
-    if (i > 0) {
-      console.log("Waiting 5 minutes to avoid rate limiting...");
-      await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minutes between tournaments
+    console.log("Creating hourly tournament for AggressiveBot001 (Testing)...");
+    const arenaUrl = await createTeamArena(nextStart, nextTournamentInfo);
+    
+    if (arenaUrl && arenaUrl !== "dry-run") {
+      console.log("\n=== Hourly Tournament created successfully ===");
+      console.log(`Tournament URL: ${arenaUrl}`);
+      console.log(`Start time: ${nextStart.toISOString()}`);
+      console.log(`Next tournament: ${nextTournamentTime.toISOString()}`);
+    } else {
+      console.log("\n=== Tournament creation failed ===");
+      process.exit(1);
     }
-
-    const startDate = new Date(
-      firstStart.getTime() + i * config.arena.intervalHours * 60 * 60 * 1000
-    );
-
-    try {
-      const arenaUrl = await createTeamArena(startDate, prevArenaUrl ?? "https://lichess.org/team/darkonteams/tournaments");
-      if (arenaUrl && arenaUrl !== "dry-run") {
-        prevArenaUrl = arenaUrl;
-      }
-    } catch (error) {
-      console.error("Error creating tournament:", error);
-    }
+  } catch (error) {
+    console.error("Error creating tournament:", error);
+    process.exit(1);
   }
 
-  console.log("\n=== DarkOnTeams Tournament creation completed ===");
-  if (prevArenaUrl) {
-    console.log(`Last tournament created: ${prevArenaUrl}`);
-  }
-  console.log("All team tournaments scheduled successfully!");
-  console.log("Check them at: https://lichess.org/team/darkonteams");
+  console.log("Check all tournaments at: https://lichess.org/team/aggressivebot001");
+  
+  // Properly exit the process to prevent workflow from hanging
+  console.log("Process completed successfully. Exiting...");
+  process.exit(0);
 }
 
 main().catch((err) => {
