@@ -103,11 +103,11 @@ Have fun!`,
   // Fallback: Create public arena
   const fallbackBody = new URLSearchParams({
     name: config.arena.name(),
-    description: `Hosted by rare team
+    description: `Hosted by darkonteams team
 
 Next tournament: ${nextTournamentUrl}
 
-Join our team: https://lichess.org/team/rare
+Join our team: https://lichess.org/team/darkonteams
 
 Have fun!`,
     clockTime: String(config.arena.clockTime),
@@ -147,7 +147,7 @@ async function main() {
   console.log(`\n=== Creating 3 Hourly UltraBullet Tournaments ===`);
   console.log(`Time Control: ${config.arena.clockTime * 60}+${config.arena.clockIncrement} (UltraBullet)`);
   console.log(`Duration: ${config.arena.minutes} minutes each`);
-  console.log(`Team: ${config.team} (Rare Team)`);
+  console.log(`Team: ${config.team} (DarkOnTeams)`);
   console.log(`First tournament starts: ${firstStart.toISOString()}`);
   console.log(`Creating tournaments for: ${firstStart.toISOString()}, ${new Date(firstStart.getTime() + 60*60*1000).toISOString()}, ${new Date(firstStart.getTime() + 2*60*60*1000).toISOString()}`);
   console.log("");
@@ -211,7 +211,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("\nCheck all tournaments at: https://lichess.org/team/rare/tournaments");
+  console.log("\nCheck all tournaments at: https://lichess.org/team/darkonteams/tournaments");
   console.log("Next workflow will run in 3 hours to create the next batch of tournaments.");
   
   // Properly exit the process to prevent workflow from hanging
