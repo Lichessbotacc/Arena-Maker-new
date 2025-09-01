@@ -1,6 +1,6 @@
 export const config = {
   server: "https://lichess.org",
-  team: "rare", // team ID
+  team: "darkonteams", // team ID
   oauthToken: process.env.OAUTH_TOKEN!, // OAuth token from environment variables
   daysInAdvance: 0, // Create tournaments for current time slot only
   dryRun: false, // true = simulate only, false = actually create
