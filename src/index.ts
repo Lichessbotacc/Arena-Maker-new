@@ -36,8 +36,6 @@ async function createTeamArena(startDate: Date, nextTournamentUrl: string) {
         name: config.arena.name(),
         description: `THE HOURLY ULTRABULLET TOURNAMENTS ARE BACK!!!
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/rare/tournaments
-
 Next tournament: ${nextTournamentUrl}
 
 My Birthday MONEY swiss: https://lichess.org/swiss/hzoaP32T
@@ -107,8 +105,6 @@ Have fun!`,
     name: config.arena.name(),
     description: `Hosted by rare team
 
-24/7 Ultrabullet tournaments: https://lichess.org/team/rare/tournaments
-
 Next tournament: ${nextTournamentUrl}
 
 Join our team: https://lichess.org/team/rare
@@ -159,41 +155,32 @@ async function main() {
   const createdTournaments = [];
 
   try {
-    // Create tournaments in reverse order so we can link them properly
-    console.log("Creating tournaments in reverse order to enable proper linking...");
+    // Create tournaments in normal order (1→2→3) but with smart linking
+    console.log("Creating tournaments in chronological order...");
     
-    for (let i = 2; i >= 0; i--) {
+    // First pass: Create all tournaments with temporary "next tournament" text
+    const tempTournaments = [];
+    
+    for (let i = 0; i < 3; i++) {
       console.log(`\n--- Creating Tournament ${i + 1}/3 ---`);
       
       // Add delay between tournaments (except first)
-      if (i < 2) {
+      if (i > 0) {
         console.log("Waiting 2 minutes to avoid rate limiting...");
         await new Promise(resolve => setTimeout(resolve, 120000)); // 2 minutes
       }
 
       const startDate = new Date(firstStart.getTime() + i * 60 * 60 * 1000); // Each hour
       
-      // Determine next tournament link
-      let nextTournamentUrl;
-      if (i === 2) {
-        // Tournament 3: link to team page
-        nextTournamentUrl = "https://lichess.org/team/rare/tournaments";
-      } else if (i === 1) {
-        // Tournament 2: link to tournament 3 (already created)
-        const tournament3 = createdTournaments.find(t => t.index === 2);
-        nextTournamentUrl = tournament3 ? tournament3.url : "https://lichess.org/team/rare/tournaments";
-      } else {
-        // Tournament 1: link to tournament 2 (already created)
-        const tournament2 = createdTournaments.find(t => t.index === 1);
-        nextTournamentUrl = tournament2 ? tournament2.url : "https://lichess.org/team/rare/tournaments";
-      }
+      // For now, use team page as next tournament link
+      // We'll update this after all tournaments are created
+      const nextTournamentUrl = "https://lichess.org/team/rare/tournaments";
 
       console.log(`Creating tournament for ${startDate.toISOString()}`);
-      console.log(`Next tournament link: ${nextTournamentUrl}`);
       const arenaUrl = await createTeamArena(startDate, nextTournamentUrl);
       
       if (arenaUrl && arenaUrl !== "dry-run") {
-        createdTournaments.push({
+        tempTournaments.push({
           url: arenaUrl,
           startTime: startDate,
           index: i
@@ -204,8 +191,8 @@ async function main() {
       }
     }
 
-    // Sort tournaments by start time for display
-    createdTournaments.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+    // Copy to main array
+    createdTournaments.push(...tempTournaments);
 
     // Summary
     console.log("\n=== Tournament Creation Summary ===");
