@@ -3,11 +3,11 @@ name: Professional Tournament Creator
 on:
   workflow_dispatch:       # Manual trigger available
   schedule:
-    - cron: "58 */3 * * *"  # Every 3 hours at :58 minutes (UTC)
+    - cron: "58 0,3,6,9,12,15,18,21 * * *"  # Every 3 hours at :58 minutes (UTC) - specific times
 
 # Prevent multiple workflows from running simultaneously
 concurrency:
-  group: tournament-creator
+  group: tournament-creator-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
