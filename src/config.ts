@@ -3,7 +3,7 @@ export const config = {
   team: "darkonteams", // team ID
   oauthToken: process.env.OAUTH_TOKEN!, // OAuth token from environment variables
   daysInAdvance: 0, // Create tournaments for current time slot only
-  dryRun: true, // true = simulate only, false = actually create
+  dryRun: false, // true = simulate only, false = actually create
 
   arena: {
     name: () => "Hourly UltraBullet", // Lichess will add "Arena" automatically
