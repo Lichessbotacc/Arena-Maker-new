@@ -38,7 +38,8 @@ async function createTeamArena(startDate: Date, nextTournamentUrl: string) {
 
 Next tournament: ${nextTournamentUrl}
 
-My Birthday MONEY swiss: https://lichess.org/swiss/hzoaP32T
+New Year Money Swiss: https://lichess.org/swiss/8rDR3Mbi
+DarkOnCrack Birthday Money Swiss: https://lichess.org/swiss/B032EEeq
 Our Discord Group: https://discord.gg/cNS3u7Gnbn
 Our Whatsapp Group: https://chat.whatsapp.com/CLdKn9VzUrL0VN2vrcOJDT?mode=ac_t
 
