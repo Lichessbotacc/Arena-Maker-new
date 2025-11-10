@@ -34,7 +34,7 @@ async function createTeamArena(startDate: Date, nextTournamentUrl: string) {
       name: "Team Conditions",
       body: new URLSearchParams({
         name: config.arena.name(),
-        description: `THE HOURLY ULTRABULLET TOURNAMENTS ARE BACK!!!
+        description: `
 
 Next tournament: ${nextTournamentUrl}
 
