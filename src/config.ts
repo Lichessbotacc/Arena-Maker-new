@@ -6,7 +6,7 @@ export const config = {
   dryRun: false, // true = simulate only, false = actually create
 
   arena: {
-    name: () => "DarkOnTeams Hourly Ultrabullet", // Lichess will add "Arena" automatically
+    name: () => "Hourly Blitz", // Lichess will add "Arena" automatically
     description: (nextLink?: string) => `Professional Ultrabullet tournaments by DarkOnTeams team!`,
     
     // Tournament settings - ULTRABULLET (15+0)
