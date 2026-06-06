@@ -1,9 +1,9 @@
 export const config = {
   server: "https://lichess.org",
-  team: "darkonteams", // team ID
+  team: "darkonultra", // team ID
   oauthToken: process.env.OAUTH_TOKEN!, // OAuth token from environment variables
   daysInAdvance: 0, // Create tournaments for current time slot only
-  dryRun: true, // true = simulate only, false = actually create
+  dryRun: false, // true = simulate only, false = actually create
 
   arena: {
     name: () => "Hourly Ultrabullet", // Lichess will add "Arena" automatically
