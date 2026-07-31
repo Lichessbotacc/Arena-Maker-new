@@ -1,16 +1,16 @@
 export const config = {
   server: "https://lichess.org",
-  team: "darkonbullt", // team ID
+  team: "darkonteams", // team ID
   oauthToken: process.env.OAUTH_TOKEN!, // OAuth token from environment variables
   daysInAdvance: 0, // Create tournaments for current time slot only
-  dryRun: true, // true = simulate only, false = actually create
+  dryRun: false, // true = simulate only, false = actually create
 
   arena: {
     name: () => "Hourly Ultrabullet", // Lichess will add "Arena" automatically
     description: (nextLink?: string) => `Professional Ultrabullet tournaments by DarkOnTeams team!`,
     
     // Tournament settings - ULTRABULLET (15+0)
-    clockTime: 1,       // Minutes -> 0.25 = 15 seconds
+    clockTime: 0.25,       // Minutes -> 0.25 = 15 seconds
     clockIncrement: 0,      // No increment
     minutes: 60,            // Duration: 1 hour
     rated: true,            // Rated games
